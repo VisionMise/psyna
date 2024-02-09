@@ -1,0 +1,22 @@
+{
+    "background": "background.png",
+    "tiles": "psyna.tiles.png",
+    "atlas": {
+        "tile_map_size": [6, 6],
+        "tile_size": [32, 32],
+        "level_size": [48, 32],
+        "corners": {
+            "top-left":         0,
+            "top-right":        5,
+            "bottom-left":      30,
+            "bottom-right":     35
+        },
+        "edges": {
+            "top":              [1, 2, 3, 4],
+            "right":            [11, 17, 23, 29],
+            "bottom":           [31, 32, 33, 34],
+            "left":             [6, 12, 18, 24]
+        },
+        "floor":                [7, 8, 9, 10, 13, 14, 15, 16, 19, 20, 21, 22, 25, 26, 27, 28]
+    }
+}

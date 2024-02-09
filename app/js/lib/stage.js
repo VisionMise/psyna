@@ -1,15 +1,11 @@
-import { Actor } from "./actor.js";
 export class Stage {
     constructor(stageName, game) {
-        this.mousePosition = { x: 0, y: 0 };
-        this.mouseDown = false;
-        this.actors = [];
         // Set the game
         this.gameEngine = game;
         // Set the stage name
         this.stageName = stageName;
         // Load the stage
-        this.loadStage();
+        this.initializeStage();
         // Initialize event handlers
         this.bindEvents();
         // Log the stage
@@ -31,49 +27,59 @@ export class Stage {
     log(message, error) {
         this.gameEngine.log(message, error);
     }
-    addActor() {
-        const x = this.mousePosition.x - 25;
-        const y = this.mousePosition.y - 25;
-        const actor = new Actor(this, { x, y }, { width: 50, height: 50 }, 'https://via.placeholder.com/50');
-        this.actors.push(actor);
-        return actor;
-    }
     //#endregion
     //#region Private Methods
     bindEvents() {
         // Bind the animate event
-        this.gameEngine.events.addEventListener('animate', () => this.draw());
-        // Bind mouse move event
-        this.stageCanvas.addEventListener('mousemove', (event) => {
-            // Set the mouse position
-            this.mousePosition.x = event.clientX;
-            this.mousePosition.y = event.clientY;
-        });
-        // Bind mouse down event
-        this.stageCanvas.addEventListener('mousedown', () => {
-            this.mouseDown = true;
-        });
-        // Bind mouse up event
-        this.stageCanvas.addEventListener('mouseup', () => {
-            this.mouseDown = false;
-        });
-        // Bind mouse click event
-        this.stageCanvas.addEventListener('click', () => {
-            this.addActor();
+        this.gameEngine.events.addEventListener('animate', () => {
+            // Update the stage
+            this.update();
+            // Draw the stage
+            this.draw();
         });
     }
-    loadStage() {
+    getScreenSize() {
+        // Get the screen width and height
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        // if the height is greater than the width
+        // portrait mode
+        if (height > width)
+            return { width: height, height: width };
+        // landscape mode
+        return { width, height };
+    }
+    findAspectRatio(width, height) {
+        // Get the aspect ratio
+        const aspectRatio = width / height;
+        //find closest with and height with a 16:9 aspect ratio
+        const wr = 16;
+        const hr = 9;
+        const ratio = wr / hr;
+        // Get the new width and height
+        let newWidth = width;
+        let newHeight = height;
+        // set the new width and height
+        // as close to the aspect ratio as possible
+        if (aspectRatio > ratio) {
+            newWidth = Math.floor(height * ratio);
+        }
+        else {
+            newHeight = Math.floor(width / ratio);
+        }
+        // return the new width and height
+        return { width: newWidth, height: newHeight };
+    }
+    initializeStage() {
         // Create a canvas
         const canvas = document.createElement('canvas');
+        // width and height of the window
+        const screenSize = this.getScreenSize();
+        // aspect ratio
+        const aspectRatio = this.findAspectRatio(screenSize.width, screenSize.height);
         // Set the canvas width and height
-        // to match the window
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        // Resize the canvas when the window is resized
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        canvas.width = aspectRatio.width;
+        canvas.height = aspectRatio.height;
         // Get the viewport
         const viewport = document.getElementById('viewport');
         // Clear the viewport
@@ -87,21 +93,8 @@ export class Stage {
     }
     draw() {
         // Clear the canvas
-        // this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
-        // Draw the actors
-        for (let actor of this.actors) {
-            actor.draw();
-            //change the position of the actor
-            actor.position.x += Math.sin(actor.position.x) * 5;
-            actor.position.y += Math.cos(actor.position.y) * 5;
-        }
-        // Draw a circle at the mouse position
-        if (this.mouseDown) {
-            this.stageContext.beginPath();
-            this.stageContext.arc(this.mousePosition.x, this.mousePosition.y, 25, 0, Math.PI * 2);
-            this.stageContext.fillStyle = 'red';
-            this.stageContext.strokeStyle = 'red';
-            this.stageContext.stroke();
-        }
+        this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
+    }
+    update() {
     }
 }

@@ -10,7 +10,45 @@ export interface Size {
     height:number;
 }
 
-export class Actor {
+export interface Rect {
+    x:number;
+    y:number;
+    width:number;
+    height:number;
+}
+
+export interface Circle {
+    x:number;
+    y:number;
+    radius:number;
+}
+
+export enum Shape {
+    Rectagle,
+    Circle
+}
+
+export interface Hurtbox {
+    parent:Actor;
+    shape:Shape;
+    active:boolean;
+    box?:Rect|Circle;
+}
+
+export interface Hitbox {
+    parent:Actor;
+    shape:Shape;
+    active:boolean;
+    box?:Rect|Circle;
+}
+
+export interface Collider {
+    shape:Shape;
+    box:Rect|Circle;
+    active:boolean;
+}
+
+export abstract class Actor {
 
     public stage:Stage;
     public position:Position;
@@ -66,6 +104,21 @@ export class Actor {
 
     public draw() : void {
         this.stage.context.drawImage(this.actorImage, this.position.x, this.position.y, this.size.width, this.size.height);
+    }
+
+    public update() : void {
+
+        // Move
+        this.move();
+
+    }
+
+    private move() {
+
+        //change the position of the actor
+        this.position.x += Math.sin(this.position.x) * (Math.PI * 2);
+        this.position.y += Math.cos(this.position.y) * (Math.PI * 2);
+
     }
 
 }

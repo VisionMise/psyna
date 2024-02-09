@@ -33,4 +33,13 @@ export class Actor {
     draw() {
         this.stage.context.drawImage(this.actorImage, this.position.x, this.position.y, this.size.width, this.size.height);
     }
+    update() {
+        // Move
+        this.move();
+    }
+    move() {
+        //change the position of the actor
+        this.position.x += Math.sin(this.position.x) * (Math.PI * 2);
+        this.position.y += Math.cos(this.position.y) * (Math.PI * 2);
+    }
 }

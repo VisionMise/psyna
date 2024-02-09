@@ -1,5 +1,7 @@
 import { Game } from "./game";
 import { Actor } from "./actor.js";
+import { Level } from "./level.js";
+
 
 export class Stage {
 
@@ -9,12 +11,8 @@ export class Stage {
         private stageName:string;
         private stageCanvas:HTMLCanvasElement;
         private stageContext:CanvasRenderingContext2D;
-
-        private mousePosition: { x:number, y:number } = { x: 0, y: 0 };
-        private mouseDown:boolean = false;
-
-        private actors:Actor[] = [];
-
+        private currentLevel:Level;
+    
         public constructor(stageName:string, game:Game) {
             
             // Set the game
@@ -24,7 +22,7 @@ export class Stage {
             this.stageName = stageName;
 
             // Load the stage
-            this.loadStage();
+            this.initializeStage();
 
             // Initialize event handlers
             this.bindEvents();
@@ -59,14 +57,6 @@ export class Stage {
             this.gameEngine.log(message, error);
         }
 
-        public addActor() : Actor {
-            const x:number = this.mousePosition.x - 25;
-            const y:number = this.mousePosition.y - 25;
-            const actor:Actor = new Actor(this, {x, y}, { width: 50, height: 50 }, 'https://via.placeholder.com/50');
-            this.actors.push(actor);
-            return actor;
-        }
-
     //#endregion
 
 
@@ -75,46 +65,72 @@ export class Stage {
         private bindEvents() : void {
 
             // Bind the animate event
-            this.gameEngine.events.addEventListener('animate', () => this.draw());
+            this.gameEngine.events.addEventListener('animate', () => {
 
-            // Bind mouse move event
-            this.stageCanvas.addEventListener('mousemove', (event:MouseEvent) => {
-                // Set the mouse position
-                this.mousePosition.x = event.clientX;
-                this.mousePosition.y = event.clientY;
+                // Update the stage
+                this.update();
+
+                // Draw the stage
+                this.draw();
+
             });
 
-            // Bind mouse down event
-            this.stageCanvas.addEventListener('mousedown', () => {
-                this.mouseDown = true;
-            });
-
-            // Bind mouse up event
-            this.stageCanvas.addEventListener('mouseup', () => {
-                this.mouseDown = false;
-            });
-
-            // Bind mouse click event
-            this.stageCanvas.addEventListener('click', () => {
-                this.addActor();
-            });
         }
 
-        private loadStage() : void {
+        private getScreenSize() : { width:number, height:number} {
+
+            // Get the screen width and height
+            const width:number  = window.innerWidth;
+            const height:number = window.innerHeight;
+
+            // if the height is greater than the width
+            // portrait mode
+            if (height > width) return { width: height, height: width };
+
+            // landscape mode
+            return { width, height };
+        }
+
+        private findAspectRatio(width:number, height:number) : { width:number, height:number } {
+
+            // Get the aspect ratio
+            const aspectRatio:number = width / height;
+
+            //find closest with and height with a 16:9 aspect ratio
+            const wr:number     = 16;
+            const hr:number     = 9;
+            const ratio:number  = wr / hr;
+
+            // Get the new width and height
+            let newWidth:number  = width;
+            let newHeight:number = height;
+
+            // set the new width and height
+            // as close to the aspect ratio as possible
+            if (aspectRatio > ratio) {
+                newWidth = Math.floor(height * ratio);
+            } else {
+                newHeight = Math.floor(width / ratio);
+            }
+
+            // return the new width and height
+            return { width: newWidth, height: newHeight };        
+        }
+
+        private initializeStage() : void {
 
             // Create a canvas
             const canvas:HTMLCanvasElement = document.createElement('canvas');
 
-            // Set the canvas width and height
-            // to match the window
-            canvas.width    = window.innerWidth;
-            canvas.height   = window.innerHeight;
+            // width and height of the window
+            const screenSize = this.getScreenSize();
 
-            // Resize the canvas when the window is resized
-            window.addEventListener('resize', () => {
-                canvas.width    = window.innerWidth;
-                canvas.height   = window.innerHeight;
-            });
+            // aspect ratio
+            const aspectRatio = this.findAspectRatio(screenSize.width, screenSize.height);
+
+            // Set the canvas width and height
+            canvas.width  = aspectRatio.width;
+            canvas.height = aspectRatio.height;
 
             // Get the viewport
             const viewport:HTMLElement = document.getElementById('viewport');
@@ -135,30 +151,19 @@ export class Stage {
         private draw() : void {
 
             // Clear the canvas
-            // this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
-
-            // Draw the actors
-            for (let actor of this.actors) {
-                actor.draw();
-
-                //change the position of the actor
-                actor.position.x += Math.sin(actor.position.x) * 5;
-                actor.position.y += Math.cos(actor.position.y) * 5;
-            }
-
-            // Draw a circle at the mouse position
-            if (this.mouseDown) {
-                this.stageContext.beginPath();
-                this.stageContext.arc(this.mousePosition.x, this.mousePosition.y, 25, 0, Math.PI * 2);
-                this.stageContext.fillStyle = 'red';
-                this.stageContext.strokeStyle = 'red';
-                this.stageContext.stroke();
-            }
-
-            
-
+            this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
 
         }
+
+        private update() : void {
+
+        }
+
+    //#endregion
+
+
+
+    //#region Rendering
 
     //#endregion
 
