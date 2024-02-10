@@ -1,7 +1,18 @@
 import { Game } from "./game";
-import { Actor } from "./actor.js";
 import { Level } from "./level.js";
 
+export enum Filter {
+    Blur        = 'blur',
+    Brightness  = 'brightness',
+    Contrast    = 'contrast',
+    Grayscale   = 'grayscale',
+    HueRotate   = 'hue-rotate',
+    Invert      = 'invert',
+    Opacity     = 'opacity',
+    Saturate    = 'saturate',
+    Sepia       = 'sepia',
+    None        = 'none'
+}
 
 export class Stage {
 
@@ -29,6 +40,8 @@ export class Stage {
 
             // Log the stage
             this.gameEngine.log(`Stage loaded: ${this.stageName}`);
+
+            this.currentLevel = new Level('level1');
         }
 
     //#endregion
@@ -75,46 +88,14 @@ export class Stage {
 
             });
 
-        }
+            // Bind the resize event
+            window.addEventListener('resize', () => {
 
-        private getScreenSize() : { width:number, height:number} {
+                // Resize the stage
+                this.resize();
 
-            // Get the screen width and height
-            const width:number  = window.innerWidth;
-            const height:number = window.innerHeight;
+            });
 
-            // if the height is greater than the width
-            // portrait mode
-            if (height > width) return { width: height, height: width };
-
-            // landscape mode
-            return { width, height };
-        }
-
-        private findAspectRatio(width:number, height:number) : { width:number, height:number } {
-
-            // Get the aspect ratio
-            const aspectRatio:number = width / height;
-
-            //find closest with and height with a 16:9 aspect ratio
-            const wr:number     = 16;
-            const hr:number     = 9;
-            const ratio:number  = wr / hr;
-
-            // Get the new width and height
-            let newWidth:number  = width;
-            let newHeight:number = height;
-
-            // set the new width and height
-            // as close to the aspect ratio as possible
-            if (aspectRatio > ratio) {
-                newWidth = Math.floor(height * ratio);
-            } else {
-                newHeight = Math.floor(width / ratio);
-            }
-
-            // return the new width and height
-            return { width: newWidth, height: newHeight };        
         }
 
         private initializeStage() : void {
@@ -146,17 +127,30 @@ export class Stage {
 
             // Set the stage context
             this.stageContext = canvas.getContext('2d');
-        }
 
-        private draw() : void {
-
-            // Clear the canvas
-            this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
+            // set image smoothing
+            this.stageContext.imageSmoothingEnabled = false;
 
         }
 
         private update() : void {
 
+            // Update the current level
+            this.currentLevel.update();
+
+        }
+
+        private resize() : void {
+
+            // Get the screen size
+            const screenSize = this.getScreenSize();
+
+            // Get the aspect ratio
+            const aspectRatio = this.findAspectRatio(screenSize.width, screenSize.height);
+
+            // Set the canvas width and height
+            this.stageCanvas.width  = aspectRatio.width;
+            this.stageCanvas.height = aspectRatio.height;
         }
 
     //#endregion
@@ -164,6 +158,66 @@ export class Stage {
 
 
     //#region Rendering
+
+        public filter(filter:Filter, value:string) {
+
+            // if the filter is none
+            if (filter === Filter.None) {
+
+                // Clear the filter
+                this.stageCanvas.style.filter = 'none';
+                return;
+            }
+
+            // Set the filter
+            this.stageCanvas.style.filter = `${filter}(${value})`;
+        }
+
+        private draw() : void {
+            
+            // Clear the canvas
+            this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
+
+            // Draw the current level
+            this.currentLevel.draw(this.stageContext);
+
+        }
+
+        private getScreenSize() : { width:number, height:number } {
+
+            // Get the screen width and height
+            const width:number  = window.innerWidth;
+            const height:number = window.innerHeight;
+
+            // landscape mode
+            return { width, height };
+        }
+
+        private findAspectRatio(width:number, height:number) : { width:number, height:number } {
+
+            // Get the aspect ratio
+            const aspectRatio:number = width / height;
+
+            //find closest with and height with a 16:9 aspect ratio
+            const wr:number     = 16;
+            const hr:number     = 9;
+            const ratio:number  = wr / hr;
+
+            // Get the new width and height
+            let newWidth:number  = width;
+            let newHeight:number = height;
+
+            // set the new width and height
+            // as close to the aspect ratio as possible
+            if (aspectRatio > ratio) {
+                newWidth    = Math.floor(height * ratio);
+            } else {
+                newHeight   = Math.floor(width / ratio);
+            }
+
+            // return the new width and height
+            return { width: newWidth, height: newHeight };        
+        }
 
     //#endregion
 

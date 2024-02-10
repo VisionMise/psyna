@@ -1,6 +1,6 @@
 :root {
 
-    --color-background: #232323;
+    --color-background: #000000;
     --color-text:       #dadada;
     --color-primary:    #0088ff;
 
@@ -43,8 +43,4 @@ h1, h2, h3, h4, h5, h6 {
     justify-content:    center;
     align-items:        center;
     overflow:           none;
-}
-
-canvas {
-    background-color: #45454522;
 }
