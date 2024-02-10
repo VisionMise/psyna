@@ -1,3 +1,4 @@
+import { Actor } from "./actor.js";
 import { Level } from "./level.js";
 export var Filter;
 (function (Filter) {
@@ -12,6 +13,12 @@ export var Filter;
     Filter["Sepia"] = "sepia";
     Filter["None"] = "none";
 })(Filter || (Filter = {}));
+export var Shape;
+(function (Shape) {
+    Shape[Shape["Rectagle"] = 0] = "Rectagle";
+    Shape[Shape["Circle"] = 1] = "Circle";
+})(Shape || (Shape = {}));
+let test = [];
 export class Stage {
     constructor(stageName, game) {
         // Set the game
@@ -42,6 +49,12 @@ export class Stage {
     log(message, error) {
         this.gameEngine.log(message, error);
     }
+    static createRectCollider(x, y, width, height) {
+        return { shape: Shape.Rectagle, box: { x, y, width, height }, active: true };
+    }
+    static createCircleCollider(x, y, radius) {
+        return { shape: Shape.Circle, box: { x, y, radius }, active: true };
+    }
     //#endregion
     //#region Private Methods
     bindEvents() {
@@ -56,6 +69,22 @@ export class Stage {
         window.addEventListener('resize', () => {
             // Resize the stage
             this.resize();
+        });
+        this.canvas.addEventListener('click', (event) => {
+            // Get the click position
+            let x = event.clientX;
+            let y = event.clientY;
+            // get offset
+            const offset = this.canvas.getBoundingClientRect();
+            // get the x and y position
+            x -= offset.left;
+            y -= offset.top;
+            // offset the height and width of the actor
+            x -= 16;
+            y -= 16;
+            // create an actor
+            const actor = new Actor(this, { x, y }, { width: 32, height: 32 });
+            test.push(actor);
         });
     }
     initializeStage() {
@@ -111,6 +140,9 @@ export class Stage {
         this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
         // Draw the current level
         this.currentLevel.draw(this.stageContext);
+        if (test && test.length > 0) {
+            test.forEach((actor) => actor.draw());
+        }
     }
     getScreenSize() {
         // Get the screen width and height

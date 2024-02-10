@@ -1,32 +1,5 @@
-import { Stage } from "./stage";
+import { Circle, Collider, Position, Rect, Shape, Size, Stage } from "./stage.js";
 
-export interface Position {
-    x:number;
-    y:number;
-}
-
-export interface Size {
-    width:number;
-    height:number;
-}
-
-export interface Rect {
-    x:number;
-    y:number;
-    width:number;
-    height:number;
-}
-
-export interface Circle {
-    x:number;
-    y:number;
-    radius:number;
-}
-
-export enum Shape {
-    Rectagle,
-    Circle
-}
 
 export interface Hurtbox {
     parent:Actor;
@@ -42,12 +15,6 @@ export interface Hitbox {
     box?:Rect|Circle;
 }
 
-export interface Collider {
-    shape:Shape;
-    box:Rect|Circle;
-    active:boolean;
-}
-
 export enum State {
     Idle        = 0,
     Walking     = 1,
@@ -56,7 +23,7 @@ export enum State {
     Dead        = 4 
 }
 
-export abstract class Actor {
+export class Actor {
 
     public stage:Stage;
     public position:Position;
@@ -70,7 +37,11 @@ export abstract class Actor {
     private actorHitbox:Hitbox;
 
     private currentState:State;
-    private ready:boolean = false;
+
+    // Flags
+    private flag_ready:boolean          = false;
+    private flag_draw_hurtbox:boolean   = false;
+    private flag_draw_hitbox:boolean    = false;
 
     public constructor(stage:Stage, position:Position, size:Size, imageURL?:string) {
 
@@ -89,11 +60,18 @@ export abstract class Actor {
         // Set the image URL
         this.actorImageURL = imageURL;
 
+        // if the image URL is not set, do not load the image
+        if (!this.actorImageURL) {
+            this.stage.log(`Actor Loaded: ${this.id}`);
+            this.flag_ready = true;
+            return;
+        }
+
         // Load the image
         this.loadImage().then(() => {
 
             this.stage.log(`Actor Loaded: ${this.id}`);
-            this.ready = true;
+            this.flag_ready = true;
 
         }).catch(() => {
             
@@ -134,16 +112,33 @@ export abstract class Actor {
     public draw() : void {
 
         // if the actor is not ready, do not draw
-        if (!this.ready) return;
+        if (!this.flag_ready) return;
 
         // Draw the actor
-        this.stage.context.drawImage(
-            this.actorImage,
-            this.position.x,
-            this.position.y,
-            this.size.width,
-            this.size.height
-        );
+        // if there is an image
+        if (this.actorImage) {
+
+            // draw the image
+            this.stage.context.drawImage(
+                this.actorImage,
+                this.position.x,
+                this.position.y,
+                this.size.width,
+                this.size.height
+            );
+
+        // if there is not an image
+        } else {
+
+            // draw a red circle
+            this.stage.context.beginPath();
+            this.stage.context.fillStyle = 'red';
+            this.stage.context.arc(this.position.x, this.position.y, this.size.width, 0, Math.PI * 2);
+            this.stage.context.fill();
+            this.stage.context.closePath();
+
+            
+        }
 
     }
 
@@ -168,10 +163,10 @@ export abstract class Actor {
     public collidesWithActor(actor:Actor) : boolean {
             
         // if the actor is not ready, do not draw
-        if (!this.ready) return false;
+        if (!this.flag_ready) return false;
 
         // if the actor is not ready, do not draw
-        if (!actor.ready) return false;
+        if (!actor.flag_ready) return false;
 
         // Check for collision
         return this.collidesWith(actor.hurtbox);
@@ -190,7 +185,7 @@ export abstract class Actor {
     private collidesWith(collider:Hurtbox|Hitbox|Collider) : boolean {
 
         // if the actor is not ready, do not draw
-        if (!this.ready) return false;
+        if (!this.flag_ready) return false;
 
         // if the actor is not ready, do not draw
         if (!collider) return false;

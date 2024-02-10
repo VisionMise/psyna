@@ -1,4 +1,5 @@
-import { Game } from "./game";
+import { Actor } from "./actor.js";
+import { Game } from "./game.js";
 import { Level } from "./level.js";
 
 export enum Filter {
@@ -13,6 +14,44 @@ export enum Filter {
     Sepia       = 'sepia',
     None        = 'none'
 }
+
+
+export interface Position {
+    x:number;
+    y:number;
+}
+
+export interface Size {
+    width:number;
+    height:number;
+}
+
+export interface Rect {
+    x:number;
+    y:number;
+    width:number;
+    height:number;
+}
+
+export interface Circle {
+    x:number;
+    y:number;
+    radius:number;
+}
+
+export enum Shape {
+    Rectagle,
+    Circle
+}
+
+
+export interface Collider {
+    shape:Shape;
+    box:Rect|Circle;
+    active:boolean;
+}
+
+let test:any[] = [];
 
 export class Stage {
 
@@ -70,6 +109,14 @@ export class Stage {
             this.gameEngine.log(message, error);
         }
 
+        public static createRectCollider(x:number, y:number, width:number, height:number) : Collider {
+            return { shape: Shape.Rectagle, box: { x, y, width, height }, active: true };
+        }
+
+        public static createCircleCollider(x:number, y:number, radius:number) : Collider {
+            return { shape: Shape.Circle, box: { x, y, radius }, active: true };
+        }
+
     //#endregion
 
 
@@ -93,6 +140,31 @@ export class Stage {
 
                 // Resize the stage
                 this.resize();
+
+            });
+
+            this.canvas.addEventListener('click', (event:MouseEvent) => {
+
+                // Get the click position
+                let x:number = event.clientX;
+                let y:number = event.clientY;
+
+                // get offset
+                const offset:any = this.canvas.getBoundingClientRect();
+
+                // get the x and y position
+                x -= offset.left;
+                y -= offset.top;
+
+                // offset the height and width of the actor
+                x -= 16;
+                y -= 16;
+
+                // create an actor
+                const actor:Actor = new Actor(this, { x, y }, { width: 32, height: 32 });
+
+
+                test.push(actor);
 
             });
 
@@ -180,6 +252,10 @@ export class Stage {
 
             // Draw the current level
             this.currentLevel.draw(this.stageContext);
+
+            if (test && test.length > 0) {
+                test.forEach((actor:Actor) => actor.draw());
+            }
 
         }
 

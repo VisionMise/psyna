@@ -1,11 +1,11 @@
+import { Circle, Collider, Rect, Shape, Stage } from "./stage.js";
+
 interface Config {
     atlas?: any;
     map?: any;
     background?: string;
     tiles?: string;
 }
-
-
 
 export class Level {
 
@@ -26,8 +26,12 @@ export class Level {
     private tileMapSize:{width:number, height:number};
     private tileSize:{width:number, height:number};
 
+    // Colliders
+    private colliders:Collider[] = [];
+
     // Flags
-    private ready:boolean = false;
+    private flag_ready:boolean = false;
+    private flag_draw_colliders:boolean = false;
 
     public constructor(name:string) {
 
@@ -41,11 +45,79 @@ export class Level {
             this.map = this.generateMapFromAtlas(this.tileAtlas);
 
             // Load the images
-            this.loadImages().then(() => this.ready = true);
+            this.loadImages().then(() => this.flag_ready = true);
 
         });
 
     }
+
+    get walls() : Collider[] {
+        return this.colliders;
+    }
+
+    get drawWallColliders() : boolean {
+        return this.flag_draw_colliders;
+    }
+
+    set drawWallColliders(value:boolean) {
+        this.flag_draw_colliders = value;
+    }
+
+    public update() {
+
+        // if the level is not ready
+        if (!this.flag_ready) {return;}
+        
+    }
+
+    public draw(context:CanvasRenderingContext2D) : void {
+
+        // if the level is not ready
+        if (!this.flag_ready) {return;}
+
+        // draw the background
+        // context.drawImage(this.levelBackground, 0, 0, context.canvas.width, context.canvas.height);
+
+        // draw the map
+        this.drawMap(context);
+
+        // if the flag is set to draw colliders
+        if (this.flag_draw_colliders) {
+
+            // loop through the colliders
+            for (let i = 0; i < this.colliders.length; i++) {
+
+                // get the collider
+                const collider:Collider = this.colliders[i];
+
+                // draw the collider
+                context.beginPath();
+                context.strokeStyle = '#adff0088';
+                context.fillStyle   = '#ad000054';
+
+                if (collider.shape === Shape.Rectagle) {
+
+                    // draw the rectangle
+                    const rect = collider.box as Rect;
+                    context.rect(collider.box.x, collider.box.y, rect.width, rect.height);
+
+                } else {
+
+                    // draw the circle
+                    const circle = collider.box as Circle;
+                    context.arc(collider.box.x, collider.box.y, circle.radius, 0, Math.PI * 2);
+
+                }
+
+                context.stroke();
+                context.fill();
+                context.closePath();
+            }
+
+        }
+    }
+
+
 
     private async loadConfiguration() : Promise<void> {
 
@@ -209,10 +281,27 @@ export class Level {
         return map;
     }
 
+    private generateColliders(map:number[][], xOffset:number = 0, yOffset:number = 0, tileWidth:number = 32, tileHeight:number = 32) : Collider[] {
+
+        const colliders:Collider[] = [];
+
+        // create the wall colliders
+        const leftWall:Collider     = Stage.createRectCollider(xOffset, yOffset, tileWidth, map.length * tileHeight);
+        const rightWall:Collider    = Stage.createRectCollider(xOffset + (map[0].length * tileWidth) - tileWidth, yOffset, tileWidth, map.length * tileHeight);
+        const topWall:Collider      = Stage.createRectCollider(xOffset, yOffset, map[0].length * tileWidth, tileHeight);
+        const bottomWall:Collider   = Stage.createRectCollider(xOffset, yOffset + (map.length * tileHeight) - tileHeight, map[0].length * tileWidth, tileHeight);
+
+        // add the wall colliders
+        colliders.push(leftWall, rightWall, topWall, bottomWall);
+
+        // return the colliders
+        return colliders;
+    }
+
     private drawMap(context:CanvasRenderingContext2D) : void {
 
         // if the level is not ready
-        if (!this.ready) {return;}
+        if (!this.flag_ready) {return;}
 
         // tile size
         const tileSize:{width:number, height:number} = this.tileSize;
@@ -237,12 +326,17 @@ export class Level {
         } else if (yPixels < context.canvas.height) {
             scale = yPixels / context.canvas.height;
         }
+
         
         // vertical offset
         let yOffset:number = (context.canvas.height - (this.mapSize.height * tileSize.height * scale)) / 2;
 
         // horizontal offset
         let xOffset:number = (context.canvas.width - (this.mapSize.width * tileSize.width * scale)) / 2;
+
+        // generate the colliders
+        this.colliders = this.generateColliders(this.map, xOffset, yOffset, tileSize.width * scale, tileSize.height * scale);
+
 
         // loop through the rows
         for (let y = 0; y < this.map.length; y++) {
@@ -281,23 +375,7 @@ export class Level {
 
     }
 
-    public update() {
-
-        // if the level is not ready
-        if (!this.ready) {return;}
-    }
-
-    public draw(context:CanvasRenderingContext2D) : void {
-
-        // if the level is not ready
-        if (!this.ready) {return;}
-
-        // draw the background
-        // context.drawImage(this.levelBackground, 0, 0, context.canvas.width, context.canvas.height);
-
-        // draw the map
-        this.drawMap(context);
-    }
+    
 
 
 }

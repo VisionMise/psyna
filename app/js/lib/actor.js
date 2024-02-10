@@ -1,8 +1,4 @@
-export var Shape;
-(function (Shape) {
-    Shape[Shape["Rectagle"] = 0] = "Rectagle";
-    Shape[Shape["Circle"] = 1] = "Circle";
-})(Shape || (Shape = {}));
+import { Shape } from "./stage.js";
 export var State;
 (function (State) {
     State[State["Idle"] = 0] = "Idle";
@@ -13,7 +9,10 @@ export var State;
 })(State || (State = {}));
 export class Actor {
     constructor(stage, position, size, imageURL) {
-        this.ready = false;
+        // Flags
+        this.flag_ready = false;
+        this.flag_draw_hurtbox = false;
+        this.flag_draw_hitbox = false;
         // Set the stage
         this.stage = stage;
         // Set the position
@@ -24,10 +23,16 @@ export class Actor {
         this.id = this.uniqueID();
         // Set the image URL
         this.actorImageURL = imageURL;
+        // if the image URL is not set, do not load the image
+        if (!this.actorImageURL) {
+            this.stage.log(`Actor Loaded: ${this.id}`);
+            this.flag_ready = true;
+            return;
+        }
         // Load the image
         this.loadImage().then(() => {
             this.stage.log(`Actor Loaded: ${this.id}`);
-            this.ready = true;
+            this.flag_ready = true;
         }).catch(() => {
             this.stage.log(`Failed to load actor image [${this.id}]: ${this.actorImageURL}`);
         });
@@ -57,10 +62,23 @@ export class Actor {
     }
     draw() {
         // if the actor is not ready, do not draw
-        if (!this.ready)
+        if (!this.flag_ready)
             return;
         // Draw the actor
-        this.stage.context.drawImage(this.actorImage, this.position.x, this.position.y, this.size.width, this.size.height);
+        // if there is an image
+        if (this.actorImage) {
+            // draw the image
+            this.stage.context.drawImage(this.actorImage, this.position.x, this.position.y, this.size.width, this.size.height);
+            // if there is not an image
+        }
+        else {
+            // draw a red circle
+            this.stage.context.beginPath();
+            this.stage.context.fillStyle = 'red';
+            this.stage.context.arc(this.position.x, this.position.y, this.size.width, 0, Math.PI * 2);
+            this.stage.context.fill();
+            this.stage.context.closePath();
+        }
     }
     update() {
     }
@@ -74,10 +92,10 @@ export class Actor {
     }
     collidesWithActor(actor) {
         // if the actor is not ready, do not draw
-        if (!this.ready)
+        if (!this.flag_ready)
             return false;
         // if the actor is not ready, do not draw
-        if (!actor.ready)
+        if (!actor.flag_ready)
             return false;
         // Check for collision
         return this.collidesWith(actor.hurtbox);
@@ -90,7 +108,7 @@ export class Actor {
     }
     collidesWith(collider) {
         // if the actor is not ready, do not draw
-        if (!this.ready)
+        if (!this.flag_ready)
             return false;
         // if the actor is not ready, do not draw
         if (!collider)

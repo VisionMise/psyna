@@ -1,7 +1,7 @@
 {
     "background": "psyna.tiles_768.png",
     "tiles": "psyna.tiles_768.png",
-    "map": {"size": [16, 9]},
+    "map": {"size": [13, 9]},
     "atlas": {
         "tile_map_size":    [  6,   6],
         "tile_size":        [128, 128],
