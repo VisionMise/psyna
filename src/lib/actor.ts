@@ -109,37 +109,26 @@ export class Actor {
         });
     }
 
-    public draw() : void {
+    public draw(context:CanvasRenderingContext2D) : void {
 
         // if the actor is not ready, do not draw
         if (!this.flag_ready) return;
 
+        // Apply scale and offset to get the canvas position
+        let x = this.position.x * this.stage.level.scale + this.stage.level.xOffset;
+        let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
+        let radius = this.size.width * this.stage.level.scale;
+    
+
         // Draw the actor
-        // if there is an image
-        if (this.actorImage) {
-
-            // draw the image
-            this.stage.context.drawImage(
-                this.actorImage,
-                this.position.x,
-                this.position.y,
-                this.size.width,
-                this.size.height
-            );
-
-        // if there is not an image
-        } else {
-
-            // draw a red circle
-            this.stage.context.beginPath();
-            this.stage.context.fillStyle = 'red';
-            this.stage.context.arc(this.position.x, this.position.y, this.size.width, 0, Math.PI * 2);
-            this.stage.context.fill();
-            this.stage.context.closePath();
-
+        // as a red circle
+        context.fillStyle = 'red';
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2, true);
+        context.closePath();
+        context.fill();
+                
             
-        }
-
     }
 
     public update() : void {

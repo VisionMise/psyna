@@ -44,6 +44,9 @@ export class Stage {
     get canvas() {
         return this.stageCanvas;
     }
+    get level() {
+        return this.currentLevel;
+    }
     //#endregion
     //#region Public Methods
     log(message, error) {
@@ -70,18 +73,17 @@ export class Stage {
             // Resize the stage
             this.resize();
         });
-        this.canvas.addEventListener('click', (event) => {
+        window.addEventListener('click', (event) => {
             // Get the click position
             let x = event.clientX;
             let y = event.clientY;
-            // get offset
-            const offset = this.canvas.getBoundingClientRect();
-            // get the x and y position
-            x -= offset.left;
-            y -= offset.top;
-            // offset the height and width of the actor
-            x -= 16;
-            y -= 16;
+            // Adjust for canvas position
+            const canvasPosition = this.stageCanvas.getBoundingClientRect();
+            x -= canvasPosition.left;
+            y -= canvasPosition.top;
+            // Adjust for scale and offset
+            x = (x - this.level.xOffset) / this.level.scale;
+            y = (y - this.level.yOffset) / this.level.scale;
             // create an actor
             const actor = new Actor(this, { x, y }, { width: 32, height: 32 });
             test.push(actor);
@@ -141,7 +143,7 @@ export class Stage {
         // Draw the current level
         this.currentLevel.draw(this.stageContext);
         if (test && test.length > 0) {
-            test.forEach((actor) => actor.draw());
+            test.forEach((actor) => actor.draw(this.stageContext));
         }
     }
     getScreenSize() {

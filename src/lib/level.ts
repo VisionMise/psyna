@@ -18,13 +18,13 @@ export class Level {
 
     // Map
     private map:number[][];
-    private mapSize:{width:number, height:number};
     private mapName:string = null;
+    public mapSize:{width:number, height:number};
 
     // Tileset
     private tileAtlas:any = {};
     private tileMapSize:{width:number, height:number};
-    private tileSize:{width:number, height:number};
+    public tileSize:{width:number, height:number};
 
     // Colliders
     private colliders:Collider[] = [];
@@ -32,6 +32,12 @@ export class Level {
     // Flags
     private flag_ready:boolean = false;
     private flag_draw_colliders:boolean = false;
+
+
+    // Scale and Offset
+    public scale:number = 1;
+    public xOffset:number = 0;
+    public yOffset:number = 0;
 
     public constructor(name:string) {
 
@@ -115,6 +121,7 @@ export class Level {
             }
 
         }
+
     }
 
 
@@ -310,22 +317,15 @@ export class Level {
         let xPixels:number = this.mapSize.width * tileSize.width;
         let yPixels:number = this.mapSize.height * tileSize.height;
 
-        // scale
-        let scale:number = 1;
+        let scale: number;
 
-        // if the map is larger than the canvas
-        // scale the map down
-        if (xPixels > context.canvas.width) {
-            scale = context.canvas.width / xPixels;
-        } else if (xPixels < context.canvas.width) {
-            scale = xPixels / context.canvas.width;
-        } 
-        
-        if (yPixels > context.canvas.height) {
-            scale = context.canvas.height / yPixels;
-        } else if (yPixels < context.canvas.height) {
-            scale = yPixels / context.canvas.height;
-        }
+        // Calculate the scale required to fit the map into the canvas
+        // Ensuring uniform scaling (same for both axes)
+        const scaleX = context.canvas.width / xPixels;
+        const scaleY = context.canvas.height / yPixels;
+
+        // Use the smaller scale to ensure the entire map fits into the canvas
+        scale = Math.min(scaleX, scaleY);
 
         
         // vertical offset
@@ -333,6 +333,11 @@ export class Level {
 
         // horizontal offset
         let xOffset:number = (context.canvas.width - (this.mapSize.width * tileSize.width * scale)) / 2;
+
+        // set the scale and offset
+        this.scale      = scale;
+        this.xOffset    = xOffset;
+        this.yOffset    = yOffset;
 
         // generate the colliders
         this.colliders = this.generateColliders(this.map, xOffset, yOffset, tileSize.width * scale, tileSize.height * scale);
@@ -347,11 +352,11 @@ export class Level {
                 // get the tile
                 const tile:number = this.map[y][x];
 
-                // get the tile position
+                // get the tile canvas location
                 const tileX:number = x * tileSize.width * scale + xOffset;
                 const tileY:number = y * tileSize.height * scale + yOffset;
 
-                // get the tile position
+                // get the tile image position
                 const tileRow:number = Math.floor(tile / this.tileMapSize.width);
                 const tileCol:number = tile % this.tileMapSize.width;
 
@@ -371,7 +376,6 @@ export class Level {
             }
 
         }
-
 
     }
 

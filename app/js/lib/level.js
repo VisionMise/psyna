@@ -14,6 +14,10 @@ export class Level {
         // Flags
         this.flag_ready = false;
         this.flag_draw_colliders = false;
+        // Scale and Offset
+        this.scale = 1;
+        this.xOffset = 0;
+        this.yOffset = 0;
         // Set the level name
         this.mapName = name;
         // Load the level configuration
@@ -220,26 +224,21 @@ export class Level {
         // get total number of tiles in pixel
         let xPixels = this.mapSize.width * tileSize.width;
         let yPixels = this.mapSize.height * tileSize.height;
-        // scale
-        let scale = 1;
-        // if the map is larger than the canvas
-        // scale the map down
-        if (xPixels > context.canvas.width) {
-            scale = context.canvas.width / xPixels;
-        }
-        else if (xPixels < context.canvas.width) {
-            scale = xPixels / context.canvas.width;
-        }
-        if (yPixels > context.canvas.height) {
-            scale = context.canvas.height / yPixels;
-        }
-        else if (yPixels < context.canvas.height) {
-            scale = yPixels / context.canvas.height;
-        }
+        let scale;
+        // Calculate the scale required to fit the map into the canvas
+        // Ensuring uniform scaling (same for both axes)
+        const scaleX = context.canvas.width / xPixels;
+        const scaleY = context.canvas.height / yPixels;
+        // Use the smaller scale to ensure the entire map fits into the canvas
+        scale = Math.min(scaleX, scaleY);
         // vertical offset
         let yOffset = (context.canvas.height - (this.mapSize.height * tileSize.height * scale)) / 2;
         // horizontal offset
         let xOffset = (context.canvas.width - (this.mapSize.width * tileSize.width * scale)) / 2;
+        // set the scale and offset
+        this.scale = scale;
+        this.xOffset = xOffset;
+        this.yOffset = yOffset;
         // generate the colliders
         this.colliders = this.generateColliders(this.map, xOffset, yOffset, tileSize.width * scale, tileSize.height * scale);
         // loop through the rows
@@ -248,10 +247,10 @@ export class Level {
             for (let x = 0; x < this.map[y].length; x++) {
                 // get the tile
                 const tile = this.map[y][x];
-                // get the tile position
+                // get the tile canvas location
                 const tileX = x * tileSize.width * scale + xOffset;
                 const tileY = y * tileSize.height * scale + yOffset;
-                // get the tile position
+                // get the tile image position
                 const tileRow = Math.floor(tile / this.tileMapSize.width);
                 const tileCol = tile % this.tileMapSize.width;
                 // draw the tile
