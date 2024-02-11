@@ -1,12 +1,14 @@
 import { Shape, Stage } from "./stage.js";
 export class Level {
-    constructor(name) {
+    constructor(name, stage) {
         // Images
         this.levelBackgroundURL = null;
         this.levelTilesetURL = null;
         this.levelBackground = null;
         this.levelTileset = null;
+        // Map
         this.mapName = null;
+        this.map = [];
         // Tileset
         this.tileAtlas = {};
         // Colliders
@@ -14,14 +16,19 @@ export class Level {
         // Flags
         this.flag_ready = false;
         this.flag_draw_colliders = false;
+        this.flag_scale_extrusion = true;
         // Scale and Offset
         this.scale = 1;
         this.xOffset = 0;
         this.yOffset = 0;
         // Set the level name
         this.mapName = name;
+        // Set the stage
+        this.stage = stage;
         // Load the level configuration
         this.loadConfiguration().then(() => {
+            // Calculate the scale
+            this.calcScale();
             // Generate the map
             this.map = this.generateMapFromAtlas(this.tileAtlas);
             // Load the images
@@ -42,6 +49,8 @@ export class Level {
         if (!this.flag_ready) {
             return;
         }
+        // calculate the scale
+        this.calcScale();
     }
     draw(context) {
         // if the level is not ready
@@ -78,9 +87,43 @@ export class Level {
             }
         }
     }
+    whenReady() {
+        return new Promise(resolve => {
+            const interval = setInterval(() => {
+                if (this.flag_ready) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+    calcScale() {
+        // context
+        const context = this.stage.context;
+        // tile size
+        const tileSize = this.tileSize;
+        // get total number of tiles in pixel
+        let xPixels = this.mapSize.width * tileSize.width;
+        let yPixels = this.mapSize.height * tileSize.height;
+        let scale;
+        // Calculate the scale required to fit the map into the canvas
+        // Ensuring uniform scaling (same for both axes)
+        const scaleX = context.canvas.width / xPixels;
+        const scaleY = context.canvas.height / yPixels;
+        // Use the smaller scale to ensure the entire map fits into the canvas
+        scale = Math.min(scaleX, scaleY);
+        // vertical offset
+        let yOffset = (context.canvas.height - (this.mapSize.height * tileSize.height * scale)) / 2;
+        // horizontal offset
+        let xOffset = (context.canvas.width - (this.mapSize.width * tileSize.width * scale)) / 2;
+        // set the scale and offset
+        this.scale = scale;
+        this.xOffset = xOffset;
+        this.yOffset = yOffset;
+    }
     async loadConfiguration() {
         // url
-        const url = `./map/${this.mapName}/atlas.json`;
+        const url = `./assets/levels/${this.mapName}/config.json`;
         // fetch the config
         const response = await fetch(url);
         // config
@@ -110,7 +153,7 @@ export class Level {
     async loadBackground() {
         return new Promise((resolve, reject) => {
             this.levelBackground = new Image();
-            this.levelBackground.src = `./map/${this.mapName}/${this.levelBackgroundURL}`;
+            this.levelBackground.src = `./assets/levels/${this.mapName}/${this.levelBackgroundURL}`;
             this.levelBackground.onload = () => resolve();
             this.levelBackground.onerror = error => reject(error);
         });
@@ -118,7 +161,7 @@ export class Level {
     async loadTileset() {
         return new Promise((resolve, reject) => {
             this.levelTileset = new Image();
-            this.levelTileset.src = `./map/${this.mapName}/${this.levelTilesetURL}`;
+            this.levelTileset.src = `./assets/levels/${this.mapName}/${this.levelTilesetURL}`;
             this.levelTileset.onload = () => resolve();
             this.levelTileset.onerror = error => reject(error);
         });
@@ -219,28 +262,10 @@ export class Level {
         if (!this.flag_ready) {
             return;
         }
-        // tile size
-        const tileSize = this.tileSize;
-        // get total number of tiles in pixel
-        let xPixels = this.mapSize.width * tileSize.width;
-        let yPixels = this.mapSize.height * tileSize.height;
-        let scale;
-        // Calculate the scale required to fit the map into the canvas
-        // Ensuring uniform scaling (same for both axes)
-        const scaleX = context.canvas.width / xPixels;
-        const scaleY = context.canvas.height / yPixels;
-        // Use the smaller scale to ensure the entire map fits into the canvas
-        scale = Math.min(scaleX, scaleY);
-        // vertical offset
-        let yOffset = (context.canvas.height - (this.mapSize.height * tileSize.height * scale)) / 2;
-        // horizontal offset
-        let xOffset = (context.canvas.width - (this.mapSize.width * tileSize.width * scale)) / 2;
-        // set the scale and offset
-        this.scale = scale;
-        this.xOffset = xOffset;
-        this.yOffset = yOffset;
         // generate the colliders
-        this.colliders = this.generateColliders(this.map, xOffset, yOffset, tileSize.width * scale, tileSize.height * scale);
+        this.colliders = this.generateColliders(this.map, this.xOffset, this.yOffset, this.tileSize.width * this.scale, this.tileSize.height * this.scale);
+        // extrusion
+        let extrusion = (this.flag_scale_extrusion) ? 1 : 0;
         // loop through the rows
         for (let y = 0; y < this.map.length; y++) {
             // loop through the columns
@@ -248,13 +273,13 @@ export class Level {
                 // get the tile
                 const tile = this.map[y][x];
                 // get the tile canvas location
-                const tileX = x * tileSize.width * scale + xOffset;
-                const tileY = y * tileSize.height * scale + yOffset;
+                const tileX = x * this.tileSize.width * this.scale + this.xOffset;
+                const tileY = y * this.tileSize.height * this.scale + this.yOffset;
                 // get the tile image position
                 const tileRow = Math.floor(tile / this.tileMapSize.width);
                 const tileCol = tile % this.tileMapSize.width;
                 // draw the tile
-                context.drawImage(this.levelTileset, tileCol * tileSize.width, tileRow * tileSize.height, tileSize.width, tileSize.height, tileX, tileY, tileSize.width * scale, tileSize.height * scale);
+                context.drawImage(this.levelTileset, (tileCol * this.tileSize.width), (tileRow * this.tileSize.height), this.tileSize.width, this.tileSize.height, tileX - extrusion, tileY - extrusion, Math.ceil(this.tileSize.width * this.scale) + (extrusion * 2), Math.ceil(this.tileSize.height * this.scale) + (extrusion * 2));
             }
         }
     }

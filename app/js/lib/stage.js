@@ -1,4 +1,3 @@
-import { Actor } from "./actor.js";
 import { Level } from "./level.js";
 export var Filter;
 (function (Filter) {
@@ -18,9 +17,12 @@ export var Shape;
     Shape[Shape["Rectagle"] = 0] = "Rectagle";
     Shape[Shape["Circle"] = 1] = "Circle";
 })(Shape || (Shape = {}));
-let test = [];
 export class Stage {
     constructor(stageName, game) {
+        this.actorList = [];
+        this.flag_antiAliasing = false;
+        this.flag_subpixelRendering = false;
+        this.flag_ready = false;
         // Set the game
         this.gameEngine = game;
         // Set the stage name
@@ -31,7 +33,10 @@ export class Stage {
         this.bindEvents();
         // Log the stage
         this.gameEngine.log(`Stage loaded: ${this.stageName}`);
-        this.currentLevel = new Level('level1');
+        // Create the current level
+        this.currentLevel = new Level(this.stageName, this);
+        // Set the stage as ready
+        this.currentLevel.whenReady().then(() => this.flag_ready = true);
     }
     //#endregion
     //#region Properties
@@ -47,6 +52,15 @@ export class Stage {
     get level() {
         return this.currentLevel;
     }
+    get actors() {
+        return this.actorList;
+    }
+    get subpixelRendering() {
+        return this.flag_subpixelRendering;
+    }
+    set subpixelRendering(value) {
+        this.flag_subpixelRendering = value;
+    }
     //#endregion
     //#region Public Methods
     log(message, error) {
@@ -57,6 +71,9 @@ export class Stage {
     }
     static createCircleCollider(x, y, radius) {
         return { shape: Shape.Circle, box: { x, y, radius }, active: true };
+    }
+    addActor(actor) {
+        this.actorList.push(actor);
     }
     //#endregion
     //#region Private Methods
@@ -72,21 +89,6 @@ export class Stage {
         window.addEventListener('resize', () => {
             // Resize the stage
             this.resize();
-        });
-        window.addEventListener('click', (event) => {
-            // Get the click position
-            let x = event.clientX;
-            let y = event.clientY;
-            // Adjust for canvas position
-            const canvasPosition = this.stageCanvas.getBoundingClientRect();
-            x -= canvasPosition.left;
-            y -= canvasPosition.top;
-            // Adjust for scale and offset
-            x = (x - this.level.xOffset) / this.level.scale;
-            y = (y - this.level.yOffset) / this.level.scale;
-            // create an actor
-            const actor = new Actor(this, { x, y }, { width: 32, height: 32 });
-            test.push(actor);
         });
     }
     initializeStage() {
@@ -110,11 +112,22 @@ export class Stage {
         // Set the stage context
         this.stageContext = canvas.getContext('2d');
         // set image smoothing
-        this.stageContext.imageSmoothingEnabled = false;
+        this.stageContext.imageSmoothingEnabled = this.flag_antiAliasing;
     }
     update() {
         // Update the current level
         this.currentLevel.update();
+        // if subpixel rendering is enabled
+        if (this.flag_subpixelRendering) {
+            // Set a subpixel blur
+            this.stageCanvas.style.imageRendering = 'auto';
+            this.filter(Filter.Blur, '0.5px');
+        }
+        else {
+            // Set the image rendering to pixelated
+            this.stageCanvas.style.imageRendering = 'pixelated';
+            this.filter(Filter.None);
+        }
     }
     resize() {
         // Get the screen size
@@ -138,13 +151,15 @@ export class Stage {
         this.stageCanvas.style.filter = `${filter}(${value})`;
     }
     draw() {
+        // if the stage is not ready, do not draw
+        if (!this.flag_ready)
+            return;
         // Clear the canvas
         this.stageContext.clearRect(0, 0, this.stageCanvas.width, this.stageCanvas.height);
         // Draw the current level
         this.currentLevel.draw(this.stageContext);
-        if (test && test.length > 0) {
-            test.forEach((actor) => actor.draw(this.stageContext));
-        }
+        // Draw the actors
+        this.actorList.forEach(actor => actor.draw(this.stageContext));
     }
     getScreenSize() {
         // Get the screen width and height

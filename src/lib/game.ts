@@ -1,9 +1,13 @@
+import { Player } from "./player.js";
 import { Stage } from "./stage.js";
 
 export class Game {
 
     private gameStage:Stage         = null;
     private eventTarget:EventTarget = new EventTarget();
+
+    public players:Player[] = [];
+    public  x:number = 0;
 
     public constructor() {
         
@@ -18,6 +22,10 @@ export class Game {
 
     public get events() : EventTarget {
         return this.eventTarget;
+    }
+
+    public get player() : Player {
+        return this.players[0];
     }
 
     public start() {
@@ -35,7 +43,11 @@ export class Game {
     private setup() {
 
         // create 
-        this.gameStage = new Stage('Level 1', this);
+        this.gameStage = new Stage("01", this);
+
+        // create the player
+        const player1:Player = new Player(this.gameStage);
+        this.players.push(player1);
 
     }
 

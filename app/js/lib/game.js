@@ -1,8 +1,11 @@
+import { Player } from "./player.js";
 import { Stage } from "./stage.js";
 export class Game {
     constructor() {
         this.gameStage = null;
         this.eventTarget = new EventTarget();
+        this.players = [];
+        this.x = 0;
         // Log the game
         this.log('Game loaded');
     }
@@ -11,6 +14,9 @@ export class Game {
     }
     get events() {
         return this.eventTarget;
+    }
+    get player() {
+        return this.players[0];
     }
     start() {
         // Setup the game
@@ -22,7 +28,10 @@ export class Game {
     }
     setup() {
         // create 
-        this.gameStage = new Stage('Level 1', this);
+        this.gameStage = new Stage("01", this);
+        // create the player
+        const player1 = new Player(this.gameStage);
+        this.players.push(player1);
     }
     animate() {
         // dispatch an event

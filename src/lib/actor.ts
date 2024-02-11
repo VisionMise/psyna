@@ -1,6 +1,7 @@
 import { Circle, Collider, Position, Rect, Shape, Size, Stage } from "./stage.js";
 
-
+// Hurtbox
+// Collision Box for taking damage
 export interface Hurtbox {
     parent:Actor;
     shape:Shape;
@@ -8,6 +9,8 @@ export interface Hurtbox {
     box?:Rect|Circle;
 }
 
+// Hitbox
+// Collision Box for dealing damage
 export interface Hitbox {
     parent:Actor;
     shape:Shape;
@@ -15,6 +18,7 @@ export interface Hitbox {
     box?:Rect|Circle;
 }
 
+// Actor State
 export enum State {
     Idle        = 0,
     Walking     = 1,
@@ -25,23 +29,46 @@ export enum State {
 
 export class Actor {
 
+    // Stage Properties
     public stage:Stage;
     public position:Position;
     public size:Size;
-    public id:string;
 
+    // Actor Properties
+    public id:string;
     private actorImage:HTMLImageElement;
     private actorImageURL:string;
 
+    // Hurtbox and Hitbox
     private actorHurtbox:Hurtbox;
     private actorHitbox:Hitbox;
 
+    // State
     private currentState:State;
 
     // Flags
     private flag_ready:boolean          = false;
+    private flag_render_hurtbox:boolean = false;
+    private flag_render_hitbox:boolean  = false;
     private flag_draw_hurtbox:boolean   = false;
     private flag_draw_hitbox:boolean    = false;
+    private flag_draw_image:boolean     = false;
+    private flag_can_be_hurt:boolean    = false;
+    private flag_can_attack:boolean     = false;
+    private flag_can_die:boolean        = false;
+    private flag_can_move:boolean       = false;
+
+
+    // Movement
+    private velocity:number             = 0;
+    private acceleration:number         = 0;
+    private maxVelocity:number          = 0;
+    private friction:number             = 0;
+
+    // Health
+    private health:number               = 100;
+    private maxHealth:number            = 100;
+
 
     public constructor(stage:Stage, position:Position, size:Size, imageURL?:string) {
 
@@ -56,10 +83,14 @@ export class Actor {
 
         // Set the id
         this.id = this.uniqueID();
-
+        
         // Set the image URL
         this.actorImageURL = imageURL;
 
+        // Setup the actor
+        this.setup();
+
+        
         // if the image URL is not set, do not load the image
         if (!this.actorImageURL) {
             this.stage.log(`Actor Loaded: ${this.id}`);
@@ -96,6 +127,32 @@ export class Actor {
         return this.actorHitbox;
     }
 
+    private setup() {
+
+        // Set the state
+        this.state = State.Idle;
+
+        // Set the hurtbox
+        this.actorHurtbox = {
+            parent:this,
+            shape:Shape.Rectagle,
+            active:true,
+            box:{
+                x:this.position.x,
+                y:this.position.y,
+                width:this.size.width,
+                height:this.size.height
+            }
+        };
+
+        // Set the hitbox
+
+
+        // if the actor is not on the stage
+        // add it to the stage
+        if (!this.stage.actors.includes(this)) this.stage.actors.push(this);
+    }
+
     private uniqueID() : string {
         return Math.random().toString(36).substr(2, 9);
     }
@@ -119,10 +176,29 @@ export class Actor {
         let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
         let radius = this.size.width * this.stage.level.scale;
     
+        // debug
+        // change color based on state
+        switch (this.state) {
+            case State.Idle:
+                context.fillStyle = 'blue';
+                break;
+            case State.Walking:
+                context.fillStyle = 'green';
+                break;
+            case State.Attacking:
+                context.fillStyle = 'yellow';
+                break;
+            case State.Hurt:
+                context.fillStyle = 'purple';
+                break;
+            case State.Dead:
+                context.fillStyle = 'black';
+                break;
+        }
 
         // Draw the actor
         // as a red circle
-        context.fillStyle = 'red';
+        // debug
         context.beginPath();
         context.arc(x, y, radius, 0, Math.PI * 2, true);
         context.closePath();
@@ -169,7 +245,6 @@ export class Actor {
     public hitBy(actor:Actor) : boolean {
         return this.collidesWith(actor.hitbox);
     }
-
 
     private collidesWith(collider:Hurtbox|Hitbox|Collider) : boolean {
 
