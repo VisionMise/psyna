@@ -51,6 +51,7 @@ export class Level {
         }
         // calculate the scale
         this.calcScale();
+        // update the colliders
     }
     draw(context) {
         // if the level is not ready

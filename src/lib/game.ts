@@ -7,7 +7,7 @@ export class Game {
     private eventTarget:EventTarget = new EventTarget();
 
     public players:Player[] = [];
-    public  x:number = 0;
+    public x:number = 0;
 
     public constructor() {
         

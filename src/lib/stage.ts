@@ -215,6 +215,9 @@ export class Stage {
             // Update the current level
             this.currentLevel.update();
 
+            // Update the actors
+            this.actorList.forEach(actor => actor.update());
+
             // if subpixel rendering is enabled
             if (this.flag_subpixelRendering) {
 

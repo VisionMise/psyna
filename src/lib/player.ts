@@ -10,6 +10,8 @@ export class Player extends Actor {
         const size:Size = { width: 64, height: 64 } as Size;
 
         super(stage, position, size, "./assets/player/player_normal_256.png");
+
+        this.velocity = { x: 1, y: 0 };
     }
 
 }

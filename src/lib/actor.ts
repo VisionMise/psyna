@@ -36,38 +36,38 @@ export class Actor {
 
     // Actor Properties
     public id:string;
-    private actorImage:HTMLImageElement;
-    private actorImageURL:string;
+    protected actorImage:HTMLImageElement;
+    protected actorImageURL:string;
 
     // Hurtbox and Hitbox
-    private actorHurtbox:Hurtbox;
-    private actorHitbox:Hitbox;
+    protected actorHurtbox:Hurtbox;
+    protected actorHitbox:Hitbox;
 
     // State
-    private currentState:State;
+    protected currentState:State;
 
     // Flags
-    private flag_ready:boolean          = false;
-    private flag_render_hurtbox:boolean = false;
-    private flag_render_hitbox:boolean  = false;
-    private flag_draw_hurtbox:boolean   = false;
-    private flag_draw_hitbox:boolean    = false;
-    private flag_draw_image:boolean     = false;
-    private flag_can_be_hurt:boolean    = false;
-    private flag_can_attack:boolean     = false;
-    private flag_can_die:boolean        = false;
-    private flag_can_move:boolean       = false;
+    protected flag_ready:boolean          = false;
+    protected flag_render_hurtbox:boolean = false;
+    protected flag_render_hitbox:boolean  = false;
+    protected flag_draw_hurtbox:boolean   = false;
+    protected flag_draw_hitbox:boolean    = false;
+    protected flag_draw_image:boolean     = false;
+    protected flag_can_be_hurt:boolean    = false;
+    protected flag_can_attack:boolean     = false;
+    protected flag_can_die:boolean        = true;
+    protected flag_can_move:boolean       = true;
 
 
     // Movement
-    private velocity:number             = 0;
-    private acceleration:number         = 0;
-    private maxVelocity:number          = 0;
-    private friction:number             = 0;
+    protected velocity:{x:number, y:number} = {x:0, y:0};
+    protected acceleration:number           = 1;
+    protected maxVelocity:number            = 2;
+    protected friction:number               = 1;
 
     // Health
-    private health:number               = 100;
-    private maxHealth:number            = 100;
+    protected health:number               = 100;
+    protected maxHealth:number            = 100;
 
 
     public constructor(stage:Stage, position:Position, size:Size, imageURL?:string) {
@@ -210,6 +210,12 @@ export class Actor {
     public update() : void {
 
 
+        // if the actor is not ready, do not draw
+        if (!this.flag_ready) return;
+
+        // move
+        this.move();
+
     }
 
     public attack(actor:Actor) : void {
@@ -295,6 +301,12 @@ export class Actor {
         return (dx * dx + dy * dy <= (circle.radius * circle.radius));
     }
 
+    private move() : void {
+
+
+
+
+    }
     
     
 

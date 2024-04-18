@@ -19,13 +19,13 @@ export class Actor {
         this.flag_draw_image = false;
         this.flag_can_be_hurt = false;
         this.flag_can_attack = false;
-        this.flag_can_die = false;
-        this.flag_can_move = false;
+        this.flag_can_die = true;
+        this.flag_can_move = true;
         // Movement
-        this.velocity = 0;
-        this.acceleration = 0;
-        this.maxVelocity = 0;
-        this.friction = 0;
+        this.velocity = { x: 0, y: 0 };
+        this.acceleration = 1;
+        this.maxVelocity = 2;
+        this.friction = 1;
         // Health
         this.health = 100;
         this.maxHealth = 100;
@@ -135,6 +135,11 @@ export class Actor {
         context.fill();
     }
     update() {
+        // if the actor is not ready, do not draw
+        if (!this.flag_ready)
+            return;
+        // move
+        this.move();
     }
     attack(actor) {
         if (actor.hitBy(this)) {
@@ -206,5 +211,7 @@ export class Actor {
         const dx = distX - actor.width;
         const dy = distY - actor.height;
         return (dx * dx + dy * dy <= (circle.radius * circle.radius));
+    }
+    move() {
     }
 }

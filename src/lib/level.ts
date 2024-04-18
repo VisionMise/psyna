@@ -84,6 +84,8 @@ export class Level {
 
         // calculate the scale
         this.calcScale();
+
+        // update the colliders
         
     }
 
