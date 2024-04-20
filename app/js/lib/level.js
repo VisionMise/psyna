@@ -264,8 +264,14 @@ export class Level {
             return;
         }
         // generate the colliders
-        this.colliders = this.generateColliders(this.map, this.xOffset, this.yOffset, this.tileSize.width * this.scale, this.tileSize.height * this.scale);
+        this.colliders = this.generateColliders(this.map, // map
+        this.xOffset, // x offset
+        this.yOffset, // y offset
+        this.tileSize.width * this.scale, // tile width
+        this.tileSize.height * this.scale // tile height
+        );
         // extrusion
+        // this is used to prevent gaps between tiles
         let extrusion = (this.flag_scale_extrusion) ? 1 : 0;
         // loop through the rows
         for (let y = 0; y < this.map.length; y++) {
@@ -280,7 +286,16 @@ export class Level {
                 const tileRow = Math.floor(tile / this.tileMapSize.width);
                 const tileCol = tile % this.tileMapSize.width;
                 // draw the tile
-                context.drawImage(this.levelTileset, (tileCol * this.tileSize.width), (tileRow * this.tileSize.height), this.tileSize.width, this.tileSize.height, tileX - extrusion, tileY - extrusion, Math.ceil(this.tileSize.width * this.scale) + (extrusion * 2), Math.ceil(this.tileSize.height * this.scale) + (extrusion * 2));
+                context.drawImage(this.levelTileset, // image
+                (tileCol * this.tileSize.width), // source X
+                (tileRow * this.tileSize.height), // source Y
+                this.tileSize.width, // source width
+                this.tileSize.height, // source height
+                tileX - extrusion, // destination X
+                tileY - extrusion, // destination Y
+                Math.ceil(this.tileSize.width * this.scale) + (extrusion * 2), // destination width
+                Math.ceil(this.tileSize.height * this.scale) + (extrusion * 2) // destination height
+                );
             }
         }
     }

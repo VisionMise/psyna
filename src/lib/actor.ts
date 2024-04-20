@@ -64,6 +64,7 @@ export class Actor {
     protected acceleration:number           = 1;
     protected maxVelocity:number            = 2;
     protected friction:number               = 1;
+    protected lastPosition:Position        = {x:0, y:0};
 
     // Health
     protected health:number               = 100;
@@ -127,6 +128,15 @@ export class Actor {
         return this.actorHitbox;
     }
 
+    public get direction() : number {
+        // compare the current position to the last position
+        // get the angle between the two points
+        // determine the direction (coverting to degrees)
+        let angle   = Math.atan2(this.position.y - this.lastPosition.y, this.position.x - this.lastPosition.x);
+        let degrees = angle * (180 / Math.PI);
+        return degrees;
+    }
+
     private setup() {
 
         // Set the state
@@ -134,23 +144,34 @@ export class Actor {
 
         // Set the hurtbox
         this.actorHurtbox = {
-            parent:this,
-            shape:Shape.Rectagle,
-            active:true,
-            box:{
-                x:this.position.x,
-                y:this.position.y,
-                width:this.size.width,
-                height:this.size.height
+            parent: this,
+            shape:  Shape.Rectagle,
+            active: true,
+            box: {
+                x:      this.position.x,
+                y:      this.position.y,
+                width:  this.size.width,
+                height: this.size.height
             }
         };
 
         // Set the hitbox
+        this.actorHitbox = {
+            parent: this,
+            shape:  Shape.Rectagle,
+            active: false,
+            box: {
+                x:      this.position.x,
+                y:      this.position.y,
+                width:  this.size.width,
+                height: this.size.height
+            }
+        }
 
 
         // if the actor is not on the stage
         // add it to the stage
-        if (!this.stage.actors.includes(this)) this.stage.actors.push(this);
+        if (this.stage.actors.includes(this) == false) this.stage.actors.push(this);
     }
 
     private uniqueID() : string {
@@ -197,12 +218,62 @@ export class Actor {
         }
 
         // Draw the actor
-        // as a red circle
+        // as a circle
         // debug
         context.beginPath();
         context.arc(x, y, radius, 0, Math.PI * 2, true);
         context.closePath();
         context.fill();
+
+
+        // Draw the hurtbox
+        // if the flag is set
+        if (this.flag_draw_hurtbox) {
+            
+            // Apply scale and offset to get the canvas position
+            let x = this.actorHurtbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
+            let y = this.actorHurtbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
+
+            // debug
+            context.strokeStyle = 'yellow';
+
+            if (this.actorHurtbox.shape == Shape.Circle) {
+                let circle = this.actorHurtbox.box as Circle;
+                context.beginPath();
+                context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
+                context.closePath();
+                context.stroke();
+            } else if (this.actorHurtbox.shape == Shape.Rectagle) {
+                let rect = this.actorHurtbox.box as Rect;
+                context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
+            }
+            
+        }
+
+
+        // Draw the hitbox
+        // if the flag is set
+        if (this.flag_draw_hitbox) {
+            
+            // Apply scale and offset to get the canvas position
+            let x = this.actorHitbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
+            let y = this.actorHitbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
+
+            // debug
+            context.strokeStyle = 'red';
+
+            if (this.actorHitbox.shape == Shape.Circle) {
+                let circle = this.actorHitbox.box as Circle;
+                context.beginPath();
+                context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
+                context.closePath();
+                context.stroke();
+            } else if (this.actorHitbox.shape == Shape.Rectagle) {
+                let rect = this.actorHitbox.box as Rect;
+                context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
+            }
+            
+        }
                 
             
     }
@@ -285,6 +356,7 @@ export class Actor {
                actor.y + actor.height > box.y;
     }
 
+
     private collidesWithCircle(actor:Rect, circle:Circle) : boolean {
         const distX = Math.abs(actor.x - circle.x - circle.radius);
         const distY = Math.abs(actor.y - circle.y - circle.radius);
@@ -300,6 +372,7 @@ export class Actor {
 
         return (dx * dx + dy * dy <= (circle.radius * circle.radius));
     }
+
 
     private move() : void {
 

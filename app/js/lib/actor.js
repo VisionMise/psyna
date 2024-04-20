@@ -26,6 +26,7 @@ export class Actor {
         this.acceleration = 1;
         this.maxVelocity = 2;
         this.friction = 1;
+        this.lastPosition = { x: 0, y: 0 };
         // Health
         this.health = 100;
         this.maxHealth = 100;
@@ -67,6 +68,14 @@ export class Actor {
     get hitbox() {
         return this.actorHitbox;
     }
+    get direction() {
+        // compare the current position to the last position
+        // get the angle between the two points
+        // determine the direction (coverting to degrees)
+        let angle = Math.atan2(this.position.y - this.lastPosition.y, this.position.x - this.lastPosition.x);
+        let degrees = angle * (180 / Math.PI);
+        return degrees;
+    }
     setup() {
         // Set the state
         this.state = State.Idle;
@@ -83,9 +92,20 @@ export class Actor {
             }
         };
         // Set the hitbox
+        this.actorHitbox = {
+            parent: this,
+            shape: Shape.Rectagle,
+            active: false,
+            box: {
+                x: this.position.x,
+                y: this.position.y,
+                width: this.size.width,
+                height: this.size.height
+            }
+        };
         // if the actor is not on the stage
         // add it to the stage
-        if (!this.stage.actors.includes(this))
+        if (this.stage.actors.includes(this) == false)
             this.stage.actors.push(this);
     }
     uniqueID() {
@@ -127,12 +147,52 @@ export class Actor {
                 break;
         }
         // Draw the actor
-        // as a red circle
+        // as a circle
         // debug
         context.beginPath();
         context.arc(x, y, radius, 0, Math.PI * 2, true);
         context.closePath();
         context.fill();
+        // Draw the hurtbox
+        // if the flag is set
+        if (this.flag_draw_hurtbox) {
+            // Apply scale and offset to get the canvas position
+            let x = this.actorHurtbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
+            let y = this.actorHurtbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
+            // debug
+            context.strokeStyle = 'yellow';
+            if (this.actorHurtbox.shape == Shape.Circle) {
+                let circle = this.actorHurtbox.box;
+                context.beginPath();
+                context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
+                context.closePath();
+                context.stroke();
+            }
+            else if (this.actorHurtbox.shape == Shape.Rectagle) {
+                let rect = this.actorHurtbox.box;
+                context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
+            }
+        }
+        // Draw the hitbox
+        // if the flag is set
+        if (this.flag_draw_hitbox) {
+            // Apply scale and offset to get the canvas position
+            let x = this.actorHitbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
+            let y = this.actorHitbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
+            // debug
+            context.strokeStyle = 'red';
+            if (this.actorHitbox.shape == Shape.Circle) {
+                let circle = this.actorHitbox.box;
+                context.beginPath();
+                context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
+                context.closePath();
+                context.stroke();
+            }
+            else if (this.actorHitbox.shape == Shape.Rectagle) {
+                let rect = this.actorHitbox.box;
+                context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
+            }
+        }
     }
     update() {
         // if the actor is not ready, do not draw
