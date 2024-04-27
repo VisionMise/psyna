@@ -60,11 +60,11 @@ export class Actor {
 
 
     // Movement
-    protected velocity:{x:number, y:number} = {x:0, y:0};
-    protected acceleration:number           = 1;
-    protected maxVelocity:number            = 2;
-    protected friction:number               = 1;
-    protected lastPosition:Position        = {x:0, y:0};
+    protected velocity:{x:number, y:number}     = {x:0, y:0};
+    protected acceleration:{x:number, y:number} = {x:0, y:0};
+    protected lastPosition:Position             = {x:0, y:0};
+    protected maxVelocity:number                = 5;
+    protected friction:number                   = 1;
 
     // Health
     protected health:number               = 100;
@@ -143,6 +143,9 @@ export class Actor {
 
         // Set the state
         this.state = State.Idle;
+
+        // Set velocity
+        this.velocity = {x:0, y:0};
 
         // Set the hurtbox
         // same size and shape as the actor
@@ -401,15 +404,6 @@ export class Actor {
         // if the actor is dead, do not move
         if (this.state == State.Dead) return;
 
-        // if the actor is hurt, do not move
-        // if (this.state == State.Hurt) return;
-
-        // if the actor is attacking, do not move
-        // if (this.state == State.Attacking) return;
-
-        // if the actor is not walking, do not move
-        // if (this.state != State.Walking) return;
-
         // if the actor is not on the stage, do not move
         if (this.stage.actors.includes(this) == false) return;
 
@@ -425,18 +419,26 @@ export class Actor {
         this.velocity.y *= this.friction;
 
         // Apply acceleration
-        this.velocity.x += this.acceleration;
-        this.velocity.y += this.acceleration;
+        this.velocity.x += this.acceleration.x;
+        this.velocity.y += this.acceleration.y;        
 
         // Limit the velocity
-        if (this.velocity.x > this.maxVelocity) this.velocity.x = this.maxVelocity;
-        if (this.velocity.y > this.maxVelocity) this.velocity.y = this.maxVelocity;
+        this.velocity.x = Math.min(this.velocity.x, this.maxVelocity);
+        this.velocity.y = Math.min(this.velocity.y, this.maxVelocity);
 
         // Limit the velocity
-        if (this.velocity.x < -this.maxVelocity) this.velocity.x = -this.maxVelocity;
-        if (this.velocity.y < -this.maxVelocity) this.velocity.y = -this.maxVelocity;
+        this.velocity.x = Math.max(this.velocity.x, -this.maxVelocity);
+        this.velocity.y = Math.max(this.velocity.y, -this.maxVelocity);
 
+        // Update the hurtbox
+        this.actorHurtbox.box.x = this.position.x;
+        this.actorHurtbox.box.y = this.position.y;
 
+        // Update the hitbox
+        this.actorHitbox.box.x = this.position.x;
+        this.actorHitbox.box.y = this.position.y;
+
+        
     }
     
     
