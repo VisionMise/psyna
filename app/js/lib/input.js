@@ -84,7 +84,7 @@ export class GamepadInput extends Input {
     constructor(gamepad) {
         super(InputType.Gamepad);
         this.keyStates = new Map();
-        this.axisThreshold = 0.5;
+        this.axisThreshold = 0.3;
         this.buttonMappings = new Map([
             [0, InputKey.Attack],
             [1, InputKey.UseItem],
@@ -99,6 +99,9 @@ export class GamepadInput extends Input {
                 this.handleAxis(gp.axes[0], gp.axes[1]);
                 this.handleButtons(Array.from(gp.buttons)); // Convert readonly GamepadButton[] to GamepadButton[]
             }
+            else {
+                this.resetAllGamepadInputs();
+            }
             requestAnimationFrame(this.pollGamepad);
         };
         this.gamepadInput = gamepad;
@@ -112,26 +115,47 @@ export class GamepadInput extends Input {
     initGamepadEvents() {
         requestAnimationFrame(this.pollGamepad);
     }
+    resetAllGamepadInputs() {
+        // Iterate over each button mapping entry
+        this.buttonMappings.forEach((inputKey, _) => {
+            // Reset the state for each mapped InputKey
+            if (this.keyStates.get(inputKey)) {
+                this.keyStates.set(inputKey, false);
+                // Dispatch a 'released' event for the reset InputKey
+                this.Events.dispatchEvent(new CustomEvent('released', { detail: { action: inputKey, state: 'released' } }));
+            }
+        });
+    }
     handleAxis(xAxis, yAxis) {
         this.updateDirection(InputKey.Right, InputKey.Left, xAxis);
         this.updateDirection(InputKey.Down, InputKey.Up, yAxis);
     }
     updateDirection(positiveKey, negativeKey, value) {
+        // Threshold check to decide if movement is significant enough to be considered intentional
         if (Math.abs(value) > this.axisThreshold) {
             const key = value > 0 ? positiveKey : negativeKey;
+            const oppositeKey = value > 0 ? negativeKey : positiveKey;
+            // Set the intended direction active
             if (!this.keyStates.get(key)) {
-                const action = InputKey[key];
                 this.keyStates.set(key, true);
-                this.Events.dispatchEvent(new CustomEvent('pressed', { detail: { action, key, state: 'pressed' } }));
+                this.Events.dispatchEvent(new CustomEvent('pressed', { detail: { action: key, key, state: 'pressed' } }));
+            }
+            // Ensure the opposite direction is inactive
+            if (this.keyStates.get(oppositeKey)) {
+                this.keyStates.set(oppositeKey, false);
+                this.Events.dispatchEvent(new CustomEvent('released', { detail: { action: oppositeKey, key: oppositeKey, state: 'released' } }));
             }
         }
         else {
-            if (this.keyStates.get(positiveKey) || this.keyStates.get(negativeKey)) {
-                const action = value > 0 ? InputKey[positiveKey] : InputKey[negativeKey];
-                this.keyStates.set(positiveKey, false);
-                this.keyStates.set(negativeKey, false);
-                this.Events.dispatchEvent(new CustomEvent('released', { detail: { action, key: value > 0 ? positiveKey : negativeKey, state: 'released' } }));
-            }
+            // Reset both directions if the stick is in the neutral zone
+            this.resetDirection(positiveKey);
+            this.resetDirection(negativeKey);
+        }
+    }
+    resetDirection(key) {
+        if (this.keyStates.get(key)) {
+            this.keyStates.set(key, false);
+            this.Events.dispatchEvent(new CustomEvent('released', { detail: { action: key, key, state: 'released' } }));
         }
     }
     handleButtons(buttons) {
@@ -162,6 +186,9 @@ export class InputDispatcher {
         this.input = input;
         this.initInputEvents();
     }
+    get events() {
+        return this.input.Events;
+    }
     initInputEvents() {
         this.input.Events.addEventListener('pressed', (event) => {
             const key = event.detail.action;
@@ -170,7 +197,6 @@ export class InputDispatcher {
             const actionEventName = InputKey[key];
             const actionEvent = new CustomEvent(actionEventName, { detail: { key, state: 'pressed' } });
             this.input.Events.dispatchEvent(actionEvent);
-            console.log('pressed', key, actionEventName);
         });
         this.input.Events.addEventListener('released', (event) => {
             const key = event.detail.action;
@@ -179,7 +205,6 @@ export class InputDispatcher {
             const actionEventName = InputKey[key];
             const actionEvent = new CustomEvent(actionEventName, { detail: { key, state: 'released' } });
             this.input.Events.dispatchEvent(actionEvent);
-            console.log('release', key, actionEventName);
         });
     }
     getKeyState(key) {

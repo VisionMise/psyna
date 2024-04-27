@@ -1,6 +1,7 @@
 import { Player } from "./player.js";
 import { Stage } from "./stage.js";
-import { Input, KeyboardAndMouseInput, GamepadInput, InputDispatcher, InputType } from "./input.js";
+import { Input, KeyboardAndMouseInput, GamepadInput, InputDispatcher, InputType, InputKey } from "./input.js";
+import { Actor } from "./actor.js";
 
 export class Game {
 
@@ -56,6 +57,9 @@ export class Game {
         const player1:Player = new Player(this.gameStage);
         this.players.push(player1);
 
+        // bind the controls
+        this.bindControls(this.dispatcher, player1);
+
     }
 
     private initKeyboardInput() {
@@ -102,6 +106,9 @@ export class Game {
             const dispatcher = new InputDispatcher(gamepadInput);
             this.dispatcher.push(dispatcher);
 
+            // bind the controls
+            this.bindControls([dispatcher], this.player);
+
             // Log the gamepad
             this.log('Gamepad connected');
         });
@@ -124,6 +131,30 @@ export class Game {
             // Log the gamepad
             this.log('Gamepad disconnected');
         });
+    }
+
+    private bindControls(dispatchers:InputDispatcher[], actor:Actor) {
+
+        // actions
+        const actions:InputKey[] = [
+            InputKey.Up,
+            InputKey.Down,
+            InputKey.Left,
+            InputKey.Right,
+            InputKey.Attack,
+            InputKey.UseItem
+        ];
+
+
+        // Bind the controls
+        dispatchers.forEach(dispatcher => {           
+            for (const action of actions) {
+                dispatcher.events.addEventListener(action, (event:CustomEvent) => {
+                    actor.doAction(action, event.detail.state == 'pressed')
+                });
+            }
+        });
+
     }
 
     private animate() {

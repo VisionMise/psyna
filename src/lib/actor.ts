@@ -1,3 +1,4 @@
+import { InputKey } from "./input.js";
 import { Circle, Collider, Position, Rect, Shape, Size, Stage } from "./stage.js";
 
 // Hurtbox
@@ -62,9 +63,14 @@ export class Actor {
     // Movement
     protected velocity:{x:number, y:number}     = {x:0, y:0};
     protected acceleration:{x:number, y:number} = {x:0, y:0};
+    protected maxAcceleration:number            = 3;
+    protected accelerationRate:number           = 3;
     protected lastPosition:Position             = {x:0, y:0};
-    protected maxVelocity:number                = 5;
-    protected friction:number                   = 1;
+    protected maxVelocity:number                = 12;
+    protected friction:number                   = 2;
+
+    // Input
+    protected keyState: { [key: string]: boolean } = {};
 
     // Health
     protected health:number               = 100;
@@ -175,7 +181,17 @@ export class Actor {
                 width:  this.size.width,
                 height: this.size.height
             }
+
+
         }
+        
+        // Initialize key states for directional controls
+        this.keyState = {
+            [InputKey.Up]: false,
+            [InputKey.Down]: false,
+            [InputKey.Left]: false,
+            [InputKey.Right]: false
+        };
 
 
         // if the actor is not on the stage
@@ -392,55 +408,95 @@ export class Actor {
         return (dx * dx + dy * dy <= (circle.radius * circle.radius));
     }
 
+    private move(): void {
+        if (!this.flag_ready || !this.flag_can_move || this.state === State.Dead || !this.stage.actors.includes(this)) return;
 
-    private move() : void {
+        // Apply acceleration to velocity
+        this.velocity.x += this.acceleration.x;
+        this.velocity.y += this.acceleration.y;
 
-        // if the actor is not ready, do not move
-        if (!this.flag_ready) return;
+        // Normalize velocity if moving in any direction
+        if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+            const length = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
 
-        // if the actor cannot move, do not move
-        if (!this.flag_can_move) return;
+            // Check if the current speed exceeds maxVelocity
+            if (length > this.maxVelocity) {
+                this.velocity.x = (this.velocity.x / length) * this.maxVelocity;
+                this.velocity.y = (this.velocity.y / length) * this.maxVelocity;
+            }
+        }
 
-        // if the actor is dead, do not move
-        if (this.state == State.Dead) return;
+        // Apply friction
+        if (this.acceleration.x === 0) {
+            this.velocity.x -= this.velocity.x * (this.friction / 10);
+        }
+        if (this.acceleration.y === 0) {
+            this.velocity.y -= this.velocity.y * (this.friction / 10);
+        }
 
-        // if the actor is not on the stage, do not move
-        if (this.stage.actors.includes(this) == false) return;
+        // Clamp the velocity to ensure it does not exceed maxVelocity due to floating-point arithmetic
+        this.velocity.x = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocity.x));
+        this.velocity.y = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocity.y));
 
-        // Save the last position
-        this.lastPosition = {x:this.position.x, y:this.position.y};
+        // // Clamp the position to ensure it does not exceed the bounds of the stage
+        // this.position.x = Math.max(0, Math.min(this.stage.level.width - this.size.width, this.position.x));
+        // this.position.y = Math.max(0, Math.min(this.stage.level.height - this.size.height, this.position.y));
+    
 
-        // Apply the velocity
+        // Stop movement if velocity is very low
+        if (Math.abs(this.velocity.x) < 0.5) this.velocity.x = 0;
+        if (Math.abs(this.velocity.y) < 0.5) this.velocity.y = 0;
+
+
+        // Update last position
+        this.lastPosition.x = this.position.x;
+        this.lastPosition.y = this.position.y;
+
+        // Update position based on velocity
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
 
-        // Apply friction
-        this.velocity.x *= this.friction;
-        this.velocity.y *= this.friction;
+        // Set the state to walking if moving
+        if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+            this.state = State.Walking;
+        } else {
+            this.state = State.Idle;
+        }
 
-        // Apply acceleration
-        this.velocity.x += this.acceleration.x;
-        this.velocity.y += this.acceleration.y;        
+        // Update hitbox and hurtbox positions
+        this.updateBoxes();
 
-        // Limit the velocity
-        this.velocity.x = Math.min(this.velocity.x, this.maxVelocity);
-        this.velocity.y = Math.min(this.velocity.y, this.maxVelocity);
+    }
 
-        // Limit the velocity
-        this.velocity.x = Math.max(this.velocity.x, -this.maxVelocity);
-        this.velocity.y = Math.max(this.velocity.y, -this.maxVelocity);
 
-        // Update the hurtbox
+    private updateBoxes() : void {
         this.actorHurtbox.box.x = this.position.x;
         this.actorHurtbox.box.y = this.position.y;
-
-        // Update the hitbox
         this.actorHitbox.box.x = this.position.x;
         this.actorHitbox.box.y = this.position.y;
-
-        
     }
     
-    
+    public doAction(action:InputKey, pressed:boolean = false) {
+        // Update the state of the key
+        this.keyState[InputKey[action]] = pressed;
+
+        // Horizontal movement logic
+        if (this.keyState[InputKey.Left] && !this.keyState[InputKey.Right]) {
+            this.acceleration.x = -this.accelerationRate;
+        } else if (this.keyState[InputKey.Right] && !this.keyState[InputKey.Left]) {
+            this.acceleration.x = this.accelerationRate;
+        } else {
+            this.acceleration.x = 0;
+        }
+
+        // Vertical movement logic
+        if (this.keyState[InputKey.Up] && !this.keyState[InputKey.Down]) {
+            this.acceleration.y = -this.accelerationRate;
+        } else if (this.keyState[InputKey.Down] && !this.keyState[InputKey.Up]) {
+            this.acceleration.y = this.accelerationRate;
+        } else {
+            this.acceleration.y = 0;
+        }
+    }
 
 }
