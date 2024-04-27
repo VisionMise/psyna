@@ -35,21 +35,21 @@ export class KeyboardAndMouseInput extends Input {
     }
     initKeyMap() {
         // Up
-        this.keyBindings.set(InputKey.Up, 'w');
+        this.keyBindings.set(InputKey.Up, ['w', 'ArrowUp']);
         // Down
-        this.keyBindings.set(InputKey.Down, 's');
+        this.keyBindings.set(InputKey.Down, ['s', 'ArrowDown']);
         // Left
-        this.keyBindings.set(InputKey.Left, 'a');
+        this.keyBindings.set(InputKey.Left, ['a', 'ArrowLeft']);
         // Right
-        this.keyBindings.set(InputKey.Right, 'd');
+        this.keyBindings.set(InputKey.Right, ['d', 'ArrowRight']);
         // Attack
-        this.keyBindings.set(InputKey.Attack, ' ');
+        this.keyBindings.set(InputKey.Attack, [' ', 'Enter']);
         // Use Item
-        this.keyBindings.set(InputKey.UseItem, 'Shift');
+        this.keyBindings.set(InputKey.UseItem, ['Shift', 'q']);
         // Action 3
-        this.keyBindings.set(InputKey.Action3, 'Control');
+        this.keyBindings.set(InputKey.Action3, ['Control', 'e']);
         // Action 4
-        this.keyBindings.set(InputKey.Action4, 'Alt');
+        this.keyBindings.set(InputKey.Action4, ['Alt', 'r']);
     }
     initKeyEvents() {
         window.addEventListener('keydown', (event) => {
@@ -72,7 +72,8 @@ export class KeyboardAndMouseInput extends Input {
     getActionFromKey(key) {
         // Find the key in the key bindings
         for (const [action, binding] of this.keyBindings) {
-            if (binding == key)
+            // Check if the key is in the bindings
+            if (binding.includes(key))
                 return action;
         }
     }
@@ -86,22 +87,31 @@ export class GamepadInput extends Input {
         this.keyStates = new Map();
         this.axisThreshold = 0.3;
         this.buttonMappings = new Map([
+            //Face buttons
             [0, InputKey.Attack],
             [1, InputKey.UseItem],
             [2, InputKey.Action3],
-            [3, InputKey.Action4]
+            [3, InputKey.Action4],
+            //D-pad
+            [12, InputKey.Up],
+            [13, InputKey.Down],
+            [14, InputKey.Left],
+            [15, InputKey.Right]
         ]);
         this.pollGamepad = () => {
+            // Check if the gamepad is connected
             if (!this.gamepadInput)
                 return;
+            // get the gamepad
             const gp = navigator.getGamepads()[this.gamepadInput.index];
-            if (gp) {
-                this.handleAxis(gp.axes[0], gp.axes[1]);
-                this.handleButtons(Array.from(gp.buttons)); // Convert readonly GamepadButton[] to GamepadButton[]
-            }
-            else {
-                this.resetAllGamepadInputs();
-            }
+            // Check if no gamepad return
+            if (!gp)
+                return;
+            // Handle the axes
+            const movement = this.handleAxis(gp.axes[0], gp.axes[1]);
+            // Handle the buttons
+            this.handleButtons(Array.from(gp.buttons), movement);
+            // Request the next animation frame
             requestAnimationFrame(this.pollGamepad);
         };
         this.gamepadInput = gamepad;
@@ -115,42 +125,44 @@ export class GamepadInput extends Input {
     initGamepadEvents() {
         requestAnimationFrame(this.pollGamepad);
     }
-    resetAllGamepadInputs() {
-        // Iterate over each button mapping entry
-        this.buttonMappings.forEach((inputKey, _) => {
-            // Reset the state for each mapped InputKey
-            if (this.keyStates.get(inputKey)) {
-                this.keyStates.set(inputKey, false);
-                // Dispatch a 'released' event for the reset InputKey
-                this.Events.dispatchEvent(new CustomEvent('released', { detail: { action: inputKey, state: 'released' } }));
-            }
-        });
-    }
     handleAxis(xAxis, yAxis) {
-        this.updateDirection(InputKey.Right, InputKey.Left, xAxis);
-        this.updateDirection(InputKey.Down, InputKey.Up, yAxis);
+        // Handle horizontal movement
+        const xd = this.handleAxisDirection(InputKey.Right, InputKey.Left, xAxis);
+        // Handle vertical movement
+        const yd = this.handleAxisDirection(InputKey.Down, InputKey.Up, yAxis);
+        return (xd || yd);
     }
-    updateDirection(positiveKey, negativeKey, value) {
-        // Threshold check to decide if movement is significant enough to be considered intentional
+    handleAxisDirection(positiveKey, negativeKey, value) {
+        // Check if the value is greater than the threshold
         if (Math.abs(value) > this.axisThreshold) {
+            // Set the key state
             const key = value > 0 ? positiveKey : negativeKey;
+            // Set the opposite key state
             const oppositeKey = value > 0 ? negativeKey : positiveKey;
-            // Set the intended direction active
-            if (!this.keyStates.get(key)) {
-                this.keyStates.set(key, true);
-                this.Events.dispatchEvent(new CustomEvent('pressed', { detail: { action: key, key, state: 'pressed' } }));
-            }
-            // Ensure the opposite direction is inactive
-            if (this.keyStates.get(oppositeKey)) {
-                this.keyStates.set(oppositeKey, false);
-                this.Events.dispatchEvent(new CustomEvent('released', { detail: { action: oppositeKey, key: oppositeKey, state: 'released' } }));
-            }
+            // Set the key state
+            this.setKeyState(key, true);
+            this.setKeyState(oppositeKey, false);
+            // Return true
+            return true;
+            // Reset the key state
         }
         else {
-            // Reset both directions if the stick is in the neutral zone
             this.resetDirection(positiveKey);
             this.resetDirection(negativeKey);
+            return false;
         }
+    }
+    setKeyState(key, pressed) {
+        // Get the current state
+        const currentState = this.keyStates.get(key) || false;
+        // Check if the state has changed
+        if (pressed === currentState)
+            return;
+        // Set the new state
+        this.keyStates.set(key, pressed);
+        // Dispatch the event
+        const eventType = pressed ? 'pressed' : 'released';
+        this.Events.dispatchEvent(new CustomEvent(eventType, { detail: { action: key, key, state: eventType } }));
     }
     resetDirection(key) {
         if (this.keyStates.get(key)) {
@@ -158,21 +170,45 @@ export class GamepadInput extends Input {
             this.Events.dispatchEvent(new CustomEvent('released', { detail: { action: key, key, state: 'released' } }));
         }
     }
-    handleButtons(buttons) {
+    handleButtons(buttons, movement = false) {
+        // Loop through the buttons
         buttons.forEach((button, index) => {
-            if (this.buttonMappings.has(index)) {
-                const key = this.buttonMappings.get(index);
-                const previouslyPressed = this.keyStates.get(key) || false;
-                if (button.pressed && !previouslyPressed) {
-                    const action = InputKey[key];
-                    this.keyStates.set(key, true);
-                    this.Events.dispatchEvent(new CustomEvent('pressed', { detail: { action, key, state: 'pressed' } }));
-                }
-                else if (!button.pressed && previouslyPressed) {
-                    const action = InputKey[key];
-                    this.keyStates.set(key, false);
-                    this.Events.dispatchEvent(new CustomEvent('released', { detail: { action, key, state: 'released' } }));
-                }
+            // Check if the button is mapped
+            if (!this.buttonMappings.has(index))
+                return;
+            // Get the key
+            const key = this.buttonMappings.get(index);
+            // Set the previous state
+            const previouslyPressed = this.keyStates.get(key) || false;
+            // Check if the button is pressed
+            if (button.pressed && !previouslyPressed) {
+                // Get the action
+                const action = InputKey[key];
+                // Check if the key is a movement key
+                // If it is, we only want to dispatch the event if no other movement key is pressed
+                // This prevents diagonal movement
+                // and ensures that only one movement key is pressed at a time
+                if (movement && (key == InputKey.Up || key == InputKey.Down || key == InputKey.Left || key == InputKey.Right))
+                    return;
+                // Set the key state
+                this.keyStates.set(key, true);
+                // Dispatch the event
+                this.Events.dispatchEvent(new CustomEvent('pressed', { detail: { action, key, state: 'pressed' } }));
+                // Check if the button is released
+            }
+            else if (!button.pressed && previouslyPressed) {
+                // Get the action
+                const action = InputKey[key];
+                // Check if the key is a movement key
+                // If it is, we only want to dispatch the event if no other movement key is pressed
+                // This prevents diagonal movement
+                // and ensures that only one movement key is pressed at a time
+                if (movement && (key == InputKey.Up || key == InputKey.Down || key == InputKey.Left || key == InputKey.Right))
+                    return;
+                // Set the key state
+                this.keyStates.set(key, false);
+                // Dispatch the event
+                this.Events.dispatchEvent(new CustomEvent('released', { detail: { action, key, state: 'released' } }));
             }
         });
     }
