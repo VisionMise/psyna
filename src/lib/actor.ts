@@ -129,12 +129,14 @@ export class Actor {
     }
 
     public get direction() : number {
-        // compare the current position to the last position
-        // get the angle between the two points
-        // determine the direction (coverting to degrees)
-        let angle   = Math.atan2(this.position.y - this.lastPosition.y, this.position.x - this.lastPosition.x);
-        let degrees = angle * (180 / Math.PI);
-        return degrees;
+        // convert the current angle to degrees
+        return this.angle * (180 / Math.PI);
+    }
+
+    public get angle() : number {
+        // get the angle from the tangent
+        // of the two points
+        return Math.atan2(this.position.y - this.lastPosition.y, this.position.x - this.lastPosition.x);
     }
 
     private setup() {
@@ -143,6 +145,8 @@ export class Actor {
         this.state = State.Idle;
 
         // Set the hurtbox
+        // same size and shape as the actor
+        // active
         this.actorHurtbox = {
             parent: this,
             shape:  Shape.Rectagle,
@@ -156,6 +160,8 @@ export class Actor {
         };
 
         // Set the hitbox
+        // temporary position
+        // inactive
         this.actorHitbox = {
             parent: this,
             shape:  Shape.Rectagle,
@@ -175,7 +181,7 @@ export class Actor {
     }
 
     private uniqueID() : string {
-        return Math.random().toString(36).substr(2, 9);
+        return Math.random().toString(36).substring(2, 9);
     }
 
     private async loadImage() : Promise<void> {
@@ -358,25 +364,77 @@ export class Actor {
 
 
     private collidesWithCircle(actor:Rect, circle:Circle) : boolean {
+
+        // Get the distance between the actor and the circle
+        // absolute value of the horizontal distance between the actor and the circle
         const distX = Math.abs(actor.x - circle.x - circle.radius);
+        // absolute value of the vertical distance between the actor and the circle
         const distY = Math.abs(actor.y - circle.y - circle.radius);
 
+        // if the horizontal distance is greater than the radius of the circle
         if (distX > (circle.radius + actor.width)) { return false; }
+        // if the vertical distance is greater than the radius of the circle
         if (distY > (circle.radius + actor.height)) { return false; }
 
+        // if the horizontal distance is less than the width of the actor
         if (distX <= (actor.width)) { return true; }
+        // if the vertical distance is less than the height of the actor
         if (distY <= (actor.height)) { return true; }
 
+        // get the distance between the actor and the circle
         const dx = distX - actor.width;
         const dy = distY - actor.height;
 
+        // return true if the distance is less than the radius of the circle
         return (dx * dx + dy * dy <= (circle.radius * circle.radius));
     }
 
 
     private move() : void {
 
+        // if the actor is not ready, do not move
+        if (!this.flag_ready) return;
 
+        // if the actor cannot move, do not move
+        if (!this.flag_can_move) return;
+
+        // if the actor is dead, do not move
+        if (this.state == State.Dead) return;
+
+        // if the actor is hurt, do not move
+        // if (this.state == State.Hurt) return;
+
+        // if the actor is attacking, do not move
+        // if (this.state == State.Attacking) return;
+
+        // if the actor is not walking, do not move
+        // if (this.state != State.Walking) return;
+
+        // if the actor is not on the stage, do not move
+        if (this.stage.actors.includes(this) == false) return;
+
+        // Save the last position
+        this.lastPosition = {x:this.position.x, y:this.position.y};
+
+        // Apply the velocity
+        this.position.x += this.velocity.x;
+        this.position.y += this.velocity.y;
+
+        // Apply friction
+        this.velocity.x *= this.friction;
+        this.velocity.y *= this.friction;
+
+        // Apply acceleration
+        this.velocity.x += this.acceleration;
+        this.velocity.y += this.acceleration;
+
+        // Limit the velocity
+        if (this.velocity.x > this.maxVelocity) this.velocity.x = this.maxVelocity;
+        if (this.velocity.y > this.maxVelocity) this.velocity.y = this.maxVelocity;
+
+        // Limit the velocity
+        if (this.velocity.x < -this.maxVelocity) this.velocity.x = -this.maxVelocity;
+        if (this.velocity.y < -this.maxVelocity) this.velocity.y = -this.maxVelocity;
 
 
     }
