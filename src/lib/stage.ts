@@ -110,6 +110,14 @@ export class Stage {
             return this.stageCanvas;
         }
 
+        public get width() : number {
+            return this.stageCanvas.width;
+        }
+
+        public get height() : number {
+            return this.stageCanvas.height;
+        }
+
         public get level() : Level {
             return this.currentLevel;
         }

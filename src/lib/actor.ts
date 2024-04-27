@@ -30,473 +30,638 @@ export enum State {
 
 export class Actor {
 
-    // Stage Properties
-    public stage:Stage;
-    public position:Position;
-    public size:Size;
+    //#region Properties
 
-    // Actor Properties
-    public id:string;
-    protected actorImage:HTMLImageElement;
-    protected actorImageURL:string;
+        // Stage Properties
+        public stage:Stage;
+        public position:Position;
+        public size:Size;
 
-    // Hurtbox and Hitbox
-    protected actorHurtbox:Hurtbox;
-    protected actorHitbox:Hitbox;
+        // Actor Properties
+        public id:string;
+        protected actorImage:HTMLImageElement;
+        protected actorImageURL:string;
 
-    // State
-    protected currentState:State;
+        // Hurtbox and Hitbox
+        protected actorHurtbox:Hurtbox;
+        protected actorHitbox:Hitbox;
 
-    // Flags
-    protected flag_ready:boolean          = false;
-    protected flag_render_hurtbox:boolean = false;
-    protected flag_render_hitbox:boolean  = false;
-    protected flag_draw_hurtbox:boolean   = false;
-    protected flag_draw_hitbox:boolean    = false;
-    protected flag_draw_image:boolean     = false;
-    protected flag_can_be_hurt:boolean    = false;
-    protected flag_can_attack:boolean     = false;
-    protected flag_can_die:boolean        = true;
-    protected flag_can_move:boolean       = true;
+        // State
+        protected currentState:State;
+        protected stateTimer:number;
+        protected stateDelay:number = 100;
 
-
-    // Movement
-    protected velocity:{x:number, y:number}     = {x:0, y:0};
-    protected acceleration:{x:number, y:number} = {x:0, y:0};
-    protected maxAcceleration:number            = 3;
-    protected accelerationRate:number           = 3;
-    protected lastPosition:Position             = {x:0, y:0};
-    protected maxVelocity:number                = 12;
-    protected friction:number                   = 2;
-
-    // Input
-    protected keyState: { [key: string]: boolean } = {};
-
-    // Health
-    protected health:number               = 100;
-    protected maxHealth:number            = 100;
+        // Flags
+        protected flag_ready:boolean          = false;
+        protected flag_render_hurtbox:boolean = false;
+        protected flag_render_hitbox:boolean  = false;
+        protected flag_draw_hurtbox:boolean   = false;
+        protected flag_draw_hitbox:boolean    = false;
+        protected flag_draw_image:boolean     = false;
+        protected flag_can_be_hurt:boolean    = false;
+        protected flag_can_attack:boolean     = false;
+        protected flag_can_die:boolean        = true;
+        protected flag_can_move:boolean       = true;
 
 
-    public constructor(stage:Stage, position:Position, size:Size, imageURL?:string) {
+        // Movement
+        protected velocity:{x:number, y:number}     = {x:0, y:0};
+        protected acceleration:{x:number, y:number} = {x:0, y:0};
+        protected maxAcceleration:number            = 3;
+        protected accelerationRate:number           = 1;
+        protected lastPosition:Position             = {x:0, y:0};
+        protected lastVelocity:{x:number, y:number} = {x:0, y:0};
+        protected maxVelocity:number                = 7;
+        protected minVelocity:number                = 0.01;
+        protected friction:number                   = 45;
 
-        // Set the stage
-        this.stage = stage;
+        // Input
+        protected keyState: { [key: string]: boolean } = {};
 
-        // Set the position
-        this.position = position;
+        // Health
+        protected health:number               = 100;
+        protected maxHealth:number            = 100;
 
-        // Set the size
-        this.size = size;
+    //#endregion
 
-        // Set the id
-        this.id = this.uniqueID();
-        
-        // Set the image URL
-        this.actorImageURL = imageURL;
 
-        // Setup the actor
-        this.setup();
 
-        
-        // if the image URL is not set, do not load the image
-        if (!this.actorImageURL) {
-            this.stage.log(`Actor Loaded: ${this.id}`);
-            this.flag_ready = true;
-            return;
-        }
+    //#region Constructor
 
-        // Load the image
-        this.loadImage().then(() => {
+        public constructor(stage:Stage, position:Position, size:Size, imageURL?:string) {
 
-            this.stage.log(`Actor Loaded: ${this.id}`);
-            this.flag_ready = true;
+            // Set the stage
+            this.stage = stage;
 
-        }).catch(() => {
+            // Set the position
+            this.position = position;
+
+            // Set the size
+            this.size = size;
+
+            // Set the id
+            this.id = this.uniqueID();
             
-            this.stage.log(`Failed to load actor image [${this.id}]: ${this.actorImageURL}`);
+            // Set the image URL
+            this.actorImageURL = imageURL;
 
-        });
-    }
+            // Setup the actor
+            this.setup();
 
-    public get state() : State {
-        return this.currentState;
-    }
-
-    public set state(newState:State) {
-        this.currentState = newState;
-    }
-
-    public get hurtbox() : Hurtbox {
-        return this.actorHurtbox;
-    }
-
-    public get hitbox() : Hitbox {
-        return this.actorHitbox;
-    }
-
-    public get direction() : number {
-        // convert the current angle to degrees
-        return this.angle * (180 / Math.PI);
-    }
-
-    public get angle() : number {
-        // get the angle from the tangent
-        // of the two points
-        return Math.atan2(this.position.y - this.lastPosition.y, this.position.x - this.lastPosition.x);
-    }
-
-    private setup() {
-
-        // Set the state
-        this.state = State.Idle;
-
-        // Set velocity
-        this.velocity = {x:0, y:0};
-
-        // Set the hurtbox
-        // same size and shape as the actor
-        // active
-        this.actorHurtbox = {
-            parent: this,
-            shape:  Shape.Rectagle,
-            active: true,
-            box: {
-                x:      this.position.x,
-                y:      this.position.y,
-                width:  this.size.width,
-                height: this.size.height
-            }
-        };
-
-        // Set the hitbox
-        // temporary position
-        // inactive
-        this.actorHitbox = {
-            parent: this,
-            shape:  Shape.Rectagle,
-            active: false,
-            box: {
-                x:      this.position.x,
-                y:      this.position.y,
-                width:  this.size.width,
-                height: this.size.height
+            
+            // if the image URL is not set, do not load the image
+            if (!this.actorImageURL) {
+                this.stage.log(`Actor Loaded: ${this.id}`);
+                this.flag_ready = true;
+                return;
             }
 
+            // Load the image
+            this.loadImage().then(() => {
 
-        }
-        
-        // Initialize key states for directional controls
-        this.keyState = {
-            [InputKey.Up]: false,
-            [InputKey.Down]: false,
-            [InputKey.Left]: false,
-            [InputKey.Right]: false
-        };
+                this.stage.log(`Actor Loaded: ${this.id}`);
+                this.flag_ready = true;
 
-
-        // if the actor is not on the stage
-        // add it to the stage
-        if (this.stage.actors.includes(this) == false) this.stage.actors.push(this);
-    }
-
-    private uniqueID() : string {
-        return Math.random().toString(36).substring(2, 9);
-    }
-
-    private async loadImage() : Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.actorImage     = new Image();
-            this.actorImage.src = this.actorImageURL;
-            this.actorImage.addEventListener('load', () => resolve());
-            this.actorImage.addEventListener('error', () => reject());
-        });
-    }
-
-    public draw(context:CanvasRenderingContext2D) : void {
-
-        // if the actor is not ready, do not draw
-        if (!this.flag_ready) return;
-
-        // Apply scale and offset to get the canvas position
-        let x = this.position.x * this.stage.level.scale + this.stage.level.xOffset;
-        let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
-        let radius = this.size.width * this.stage.level.scale;
-    
-        // debug
-        // change color based on state
-        switch (this.state) {
-            case State.Idle:
-                context.fillStyle = 'blue';
-                break;
-            case State.Walking:
-                context.fillStyle = 'green';
-                break;
-            case State.Attacking:
-                context.fillStyle = 'yellow';
-                break;
-            case State.Hurt:
-                context.fillStyle = 'purple';
-                break;
-            case State.Dead:
-                context.fillStyle = 'black';
-                break;
-        }
-
-        // Draw the actor
-        // as a circle
-        // debug
-        context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2, true);
-        context.closePath();
-        context.fill();
-
-
-        // Draw the hurtbox
-        // if the flag is set
-        if (this.flag_draw_hurtbox) {
-            
-            // Apply scale and offset to get the canvas position
-            let x = this.actorHurtbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
-            let y = this.actorHurtbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
-
-            // debug
-            context.strokeStyle = 'yellow';
-
-            if (this.actorHurtbox.shape == Shape.Circle) {
-                let circle = this.actorHurtbox.box as Circle;
-                context.beginPath();
-                context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
-                context.closePath();
-                context.stroke();
-            } else if (this.actorHurtbox.shape == Shape.Rectagle) {
-                let rect = this.actorHurtbox.box as Rect;
-                context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
-            }
-            
-        }
-
-
-        // Draw the hitbox
-        // if the flag is set
-        if (this.flag_draw_hitbox) {
-            
-            // Apply scale and offset to get the canvas position
-            let x = this.actorHitbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
-            let y = this.actorHitbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
-
-            // debug
-            context.strokeStyle = 'red';
-
-            if (this.actorHitbox.shape == Shape.Circle) {
-                let circle = this.actorHitbox.box as Circle;
-                context.beginPath();
-                context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
-                context.closePath();
-                context.stroke();
-            } else if (this.actorHitbox.shape == Shape.Rectagle) {
-                let rect = this.actorHitbox.box as Rect;
-                context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
-            }
-            
-        }
+            }).catch(() => {
                 
-            
-    }
+                this.stage.log(`Failed to load actor image [${this.id}]: ${this.actorImageURL}`);
 
-    public update() : void {
-
-
-        // if the actor is not ready, do not draw
-        if (!this.flag_ready) return;
-
-        // move
-        this.move();
-
-    }
-
-    public attack(actor:Actor) : void {
-
-        if (actor.hitBy(this)) {
-         
-            // Damage
-
-        } else {
-
-            // No Damage
+            });
         }
 
-    }
+    //#endregion
 
-    public collidesWithActor(actor:Actor) : boolean {
-            
-        // if the actor is not ready, do not draw
-        if (!this.flag_ready) return false;
 
-        // if the actor is not ready, do not draw
-        if (!actor.flag_ready) return false;
 
-        // Check for collision
-        return this.collidesWith(actor.hurtbox);
-        
-    }
+    //#region Getters and Setters
 
-    public collidesWithCollider(collider:Collider) : boolean {
-        return this.collidesWith(collider);
-    }
-
-    public hitBy(actor:Actor) : boolean {
-        return this.collidesWith(actor.hitbox);
-    }
-
-    private collidesWith(collider:Hurtbox|Hitbox|Collider) : boolean {
-
-        // if the actor is not ready, do not draw
-        if (!this.flag_ready) return false;
-
-        // if the actor is not ready, do not draw
-        if (!collider) return false;
-
-        // Get the actor's box
-        const actorBox:Rect = {
-            x:this.position.x,
-            y:this.position.y,
-            width:this.size.width,
-            height:this.size.height
-        };
-
-        // check the shape of the box
-        switch (collider.shape) {
-            case Shape.Rectagle:
-                return this.collidesWithRect(actorBox, collider.box as Rect);
-            case Shape.Circle:
-                return this.collidesWithCircle(actorBox, collider.box as Circle);
+        public get state() : State {
+            return this.currentState;
         }
 
-    }
+        public set state(newState:State) {
+            this.currentState = newState;
+        }
 
-    private collidesWithRect(actor:Rect, box:Rect) : boolean {
-        return actor.x < box.x + box.width &&
-               actor.x + actor.width > box.x &&
-               actor.y < box.y + box.height &&
-               actor.y + actor.height > box.y;
-    }
+        public get hurtbox() : Hurtbox {
+            return this.actorHurtbox;
+        }
 
+        public get hitbox() : Hitbox {
+            return this.actorHitbox;
+        }
 
-    private collidesWithCircle(actor:Rect, circle:Circle) : boolean {
+        public get direction() : number {
+            // convert the current angle to degrees
+            let degrees:number = this.angle * (180 / Math.PI) + 90;
+            // add 360 to the degrees if the value is negative
+            if (degrees < 0) degrees += 360;
+            // return the degrees
+            return degrees;
+        }
 
-        // Get the distance between the actor and the circle
-        // absolute value of the horizontal distance between the actor and the circle
-        const distX = Math.abs(actor.x - circle.x - circle.radius);
-        // absolute value of the vertical distance between the actor and the circle
-        const distY = Math.abs(actor.y - circle.y - circle.radius);
+        public get cardinalDirection() : string {
 
-        // if the horizontal distance is greater than the radius of the circle
-        if (distX > (circle.radius + actor.width)) { return false; }
-        // if the vertical distance is greater than the radius of the circle
-        if (distY > (circle.radius + actor.height)) { return false; }
+            // get the direction
+            // subtract 90 to get the correct direction
+            let direction = this.direction;
+            
+            // check the direction
+            if (direction < 0) direction += 360;
 
-        // if the horizontal distance is less than the width of the actor
-        if (distX <= (actor.width)) { return true; }
-        // if the vertical distance is less than the height of the actor
-        if (distY <= (actor.height)) { return true; }
+            // get the cardinal direction
+            if (direction >= 0 && direction < 22.5) return 'N';
+            if (direction >= 22.5 && direction < 67.5) return 'NE';
+            if (direction >= 67.5 && direction < 112.5) return 'E';
+            if (direction >= 112.5 && direction < 157.5) return 'SE';
+            if (direction >= 157.5 && direction < 202.5) return 'S';
+            if (direction >= 202.5 && direction < 247.5) return 'SW';
+            if (direction >= 247.5 && direction < 292.5) return 'W';
+            if (direction >= 292.5 && direction < 337.5) return 'NW';
+            if (direction >= 337.5) return 'N';
+            return 'N';            
+        }
 
-        // get the distance between the actor and the circle
-        const dx = distX - actor.width;
-        const dy = distY - actor.height;
+        public get movementDirection() : string {
+            //return up, down, left, right
 
-        // return true if the distance is less than the radius of the circle
-        return (dx * dx + dy * dy <= (circle.radius * circle.radius));
-    }
+            if (this.velocity.x > 0) return 'right';
+            if (this.velocity.x < 0) return 'left';
+            if (this.velocity.y > 0) return 'down';
+            if (this.velocity.y < 0) return 'up';
+            return 'none';
+        }
 
-    private move(): void {
-        if (!this.flag_ready || !this.flag_can_move || this.state === State.Dead || !this.stage.actors.includes(this)) return;
-
-        // Apply acceleration to velocity
-        this.velocity.x += this.acceleration.x;
-        this.velocity.y += this.acceleration.y;
-
-        // Normalize velocity if moving in any direction
-        if (this.velocity.x !== 0 || this.velocity.y !== 0) {
-            const length = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.y * this.velocity.y);
-
-            // Check if the current speed exceeds maxVelocity
-            if (length > this.maxVelocity) {
-                this.velocity.x = (this.velocity.x / length) * this.maxVelocity;
-                this.velocity.y = (this.velocity.y / length) * this.maxVelocity;
+        public get angle() : number {
+            if (this.velocity.x === 0 && this.velocity.y === 0) {
+                // Use the last non-zero velocity to maintain the previous direction
+                return Math.atan2(this.lastVelocity.y, this.lastVelocity.x);
+            } else {
+                // Calculate the angle based on the current velocity
+                return Math.atan2(this.velocity.y, this.velocity.x);
             }
         }
 
-        // Apply friction
-        if (this.acceleration.x === 0) {
-            this.velocity.x -= this.velocity.x * (this.friction / 10);
-        }
-        if (this.acceleration.y === 0) {
-            this.velocity.y -= this.velocity.y * (this.friction / 10);
+        public get waitingOnDelayedState() : boolean {
+            return (this.stateTimer != 0 && typeof this.stateTimer != 'undefined');
         }
 
-        // Clamp the velocity to ensure it does not exceed maxVelocity due to floating-point arithmetic
-        this.velocity.x = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocity.x));
-        this.velocity.y = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocity.y));
-
-        // // Clamp the position to ensure it does not exceed the bounds of the stage
-        // this.position.x = Math.max(0, Math.min(this.stage.level.width - this.size.width, this.position.x));
-        // this.position.y = Math.max(0, Math.min(this.stage.level.height - this.size.height, this.position.y));
-    
-
-        // Stop movement if velocity is very low
-        if (Math.abs(this.velocity.x) < 0.5) this.velocity.x = 0;
-        if (Math.abs(this.velocity.y) < 0.5) this.velocity.y = 0;
+    //#endregion
 
 
-        // Update last position
-        this.lastPosition.x = this.position.x;
-        this.lastPosition.y = this.position.y;
 
-        // Update position based on velocity
-        this.position.x += this.velocity.x;
-        this.position.y += this.velocity.y;
+    //#region Methods
 
-        // Set the state to walking if moving
-        if (this.velocity.x !== 0 || this.velocity.y !== 0) {
-            this.state = State.Walking;
-        } else {
+        public delayStateChange(state:State, delay?:number) : void {
+
+            // if waiting on a delayed state change
+            // do not change the state
+            if (this.waitingOnDelayedState) return;
+
+            // set the state delay
+            this.stateTimer = setTimeout(() => {
+
+                // set the state
+                this.state = state;
+
+                // clear the state timer
+                clearTimeout(this.stateTimer);
+                this.stateTimer = 0;
+                
+            }, delay ?? this.stateDelay);
+        }
+
+        private setup() {
+
+            // Set the state
             this.state = State.Idle;
+
+            // Set velocity
+            this.velocity = {x:0, y:0};
+
+            // Set the hurtbox
+            // same size and shape as the actor
+            // active
+            this.actorHurtbox = {
+                parent: this,
+                shape:  Shape.Rectagle,
+                active: true,
+                box: {
+                    x:      this.position.x,
+                    y:      this.position.y,
+                    width:  this.size.width,
+                    height: this.size.height
+                }
+            };
+
+            // Set the hitbox
+            // temporary position
+            // inactive
+            this.actorHitbox = {
+                parent: this,
+                shape:  Shape.Rectagle,
+                active: false,
+                box: {
+                    x:      this.position.x,
+                    y:      this.position.y,
+                    width:  this.size.width,
+                    height: this.size.height
+                }
+
+
+            }
+            
+            // Initialize key states for directional controls
+            this.keyState = {
+                [InputKey.Up]: false,
+                [InputKey.Down]: false,
+                [InputKey.Left]: false,
+                [InputKey.Right]: false
+            };
+
+
+            // if the actor is not on the stage
+            // add it to the stage
+            if (this.stage.actors.includes(this) == false) this.stage.actors.push(this);
         }
 
-        // Update hitbox and hurtbox positions
-        this.updateBoxes();
-
-    }
-
-
-    private updateBoxes() : void {
-        this.actorHurtbox.box.x = this.position.x;
-        this.actorHurtbox.box.y = this.position.y;
-        this.actorHitbox.box.x = this.position.x;
-        this.actorHitbox.box.y = this.position.y;
-    }
-    
-    public doAction(action:InputKey, pressed:boolean = false) {
-        // Update the state of the key
-        this.keyState[InputKey[action]] = pressed;
-
-        // Horizontal movement logic
-        if (this.keyState[InputKey.Left] && !this.keyState[InputKey.Right]) {
-            this.acceleration.x = -this.accelerationRate;
-        } else if (this.keyState[InputKey.Right] && !this.keyState[InputKey.Left]) {
-            this.acceleration.x = this.accelerationRate;
-        } else {
-            this.acceleration.x = 0;
+        private uniqueID() : string {
+            return Math.random().toString(36).substring(2, 9);
         }
 
-        // Vertical movement logic
-        if (this.keyState[InputKey.Up] && !this.keyState[InputKey.Down]) {
-            this.acceleration.y = -this.accelerationRate;
-        } else if (this.keyState[InputKey.Down] && !this.keyState[InputKey.Up]) {
-            this.acceleration.y = this.accelerationRate;
-        } else {
-            this.acceleration.y = 0;
+        private async loadImage() : Promise<void> {
+            return new Promise((resolve, reject) => {
+                this.actorImage     = new Image();
+                this.actorImage.src = this.actorImageURL;
+                this.actorImage.addEventListener('load', () => resolve());
+                this.actorImage.addEventListener('error', () => reject());
+            });
         }
-    }
+
+    //#endregion
+
+
+
+    //#region Drawing
+
+        public draw(context:CanvasRenderingContext2D) : void {
+
+            // if the actor is not ready, do not draw
+            if (!this.flag_ready) return;
+
+            // Apply scale and offset to get the canvas position
+            let x = this.position.x * this.stage.level.scale + this.stage.level.xOffset;
+            let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
+            let radius = this.size.width * this.stage.level.scale;
+        
+            // debug
+            // change color based on state
+            switch (this.state) {
+                case State.Idle:
+                    context.fillStyle = 'blue';
+                    break;
+                case State.Walking:
+                    context.fillStyle = 'green';
+                    break;
+                case State.Attacking:
+                    context.fillStyle = 'yellow';
+                    break;
+                case State.Hurt:
+                    context.fillStyle = 'purple';
+                    break;
+                case State.Dead:
+                    context.fillStyle = 'black';
+                    break;
+            }
+
+            // Draw the actor
+            // as a circle
+            // debug
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2, true);
+            context.closePath();
+            context.fill();
+
+
+            // Draw the hurtbox
+            // if the flag is set
+            if (this.flag_draw_hurtbox) {
+                
+                // Apply scale and offset to get the canvas position
+                let x = this.actorHurtbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
+                let y = this.actorHurtbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
+
+                // debug
+                context.strokeStyle = 'yellow';
+
+                if (this.actorHurtbox.shape == Shape.Circle) {
+                    let circle = this.actorHurtbox.box as Circle;
+                    context.beginPath();
+                    context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
+                    context.closePath();
+                    context.stroke();
+                } else if (this.actorHurtbox.shape == Shape.Rectagle) {
+                    let rect = this.actorHurtbox.box as Rect;
+                    context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
+                }
+                
+            }
+
+
+            // Draw the hitbox
+            // if the flag is set
+            if (this.flag_draw_hitbox) {
+                
+                // Apply scale and offset to get the canvas position
+                let x = this.actorHitbox.box.x * this.stage.level.scale + this.stage.level.xOffset;
+                let y = this.actorHitbox.box.y * this.stage.level.scale + this.stage.level.yOffset;
+
+                // debug
+                context.strokeStyle = 'red';
+
+                if (this.actorHitbox.shape == Shape.Circle) {
+                    let circle = this.actorHitbox.box as Circle;
+                    context.beginPath();
+                    context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
+                    context.closePath();
+                    context.stroke();
+                } else if (this.actorHitbox.shape == Shape.Rectagle) {
+                    let rect = this.actorHitbox.box as Rect;
+                    context.strokeRect(x, y, rect.width * this.stage.level.scale, rect.height * this.stage.level.scale);
+                }
+                
+            }
+
+
+            // figure the this.angle, draw a dot to indicate the direction
+            // debug
+            const angle = this.angle;
+            const length = 20;
+            const x2 = x + Math.cos(angle) * length;
+            const y2 = y + Math.sin(angle) * length;
+            context.strokeStyle = 'white';
+            context.beginPath();
+            context.moveTo(x, y);
+            context.lineTo(x2, y2);
+            context.closePath();
+            context.stroke();
+
+            //draw degrees below the dot
+            // debug
+            context.fillStyle = 'white';
+            context.font = '10px Arial';
+            context.textAlign = 'center';
+            context.fillText(`${this.direction.toFixed(2)}°`, x, y + 40);
+
+            //draw cardinal direction below the degrees
+            // debug
+            context.fillStyle = 'white';
+            context.font = '10px Arial';
+            context.textAlign = 'center';
+            context.fillText(this.cardinalDirection, x, y + 50);
+
+            //draw movement direction below the cardinal direction
+            // debug
+            context.fillStyle = 'white';
+            context.font = '10px Arial';
+            context.textAlign = 'center';
+            context.fillText(this.movementDirection, x, y + 60);
+
+                            
+                
+        }
+
+        public update() : void {
+
+
+            // if the actor is not ready, do not draw
+            if (!this.flag_ready) return;
+
+            // move
+            this.move();
+
+        }
+
+    //#endregion
+
+
+
+    //#region Actions
+
+        public attack(actor:Actor) : void {
+
+            if (actor.hitBy(this)) {
+            
+                // Damage
+
+            } else {
+
+                // No Damage
+            }
+
+        }
+
+    //#endregion
+
+
+
+    //#region Collision
+
+        public collidesWithActor(actor:Actor) : boolean {
+                
+            // if the actor is not ready, do not draw
+            if (!this.flag_ready) return false;
+
+            // if the actor is not ready, do not draw
+            if (!actor.flag_ready) return false;
+
+            // Check for collision
+            return this.collidesWith(actor.hurtbox);
+            
+        }
+
+        public collidesWithCollider(collider:Collider) : boolean {
+            return this.collidesWith(collider);
+        }
+
+        public hitBy(actor:Actor) : boolean {
+            return this.collidesWith(actor.hitbox);
+        }
+
+        private collidesWith(collider:Hurtbox|Hitbox|Collider) : boolean {
+
+            // if the actor is not ready, do not draw
+            if (!this.flag_ready) return false;
+
+            // if the actor is not ready, do not draw
+            if (!collider) return false;
+
+            // Get the actor's box
+            const actorBox:Rect = {
+                x:this.position.x,
+                y:this.position.y,
+                width:this.size.width,
+                height:this.size.height
+            };
+
+            // check the shape of the box
+            switch (collider.shape) {
+                case Shape.Rectagle:
+                    return this.collidesWithRect(actorBox, collider.box as Rect);
+                case Shape.Circle:
+                    return this.collidesWithCircle(actorBox, collider.box as Circle);
+            }
+
+        }
+
+        private collidesWithRect(actor:Rect, box:Rect) : boolean {
+            return actor.x < box.x + box.width &&
+                actor.x + actor.width > box.x &&
+                actor.y < box.y + box.height &&
+                actor.y + actor.height > box.y;
+        }
+
+        private collidesWithCircle(actor:Rect, circle:Circle) : boolean {
+
+            // Get the distance between the actor and the circle
+            // absolute value of the horizontal distance between the actor and the circle
+            const distX = Math.abs(actor.x - circle.x - circle.radius);
+            // absolute value of the vertical distance between the actor and the circle
+            const distY = Math.abs(actor.y - circle.y - circle.radius);
+
+            // if the horizontal distance is greater than the radius of the circle
+            if (distX > (circle.radius + actor.width)) { return false; }
+            // if the vertical distance is greater than the radius of the circle
+            if (distY > (circle.radius + actor.height)) { return false; }
+
+            // if the horizontal distance is less than the width of the actor
+            if (distX <= (actor.width)) { return true; }
+            // if the vertical distance is less than the height of the actor
+            if (distY <= (actor.height)) { return true; }
+
+            // get the distance between the actor and the circle
+            const dx = distX - actor.width;
+            const dy = distY - actor.height;
+
+            // return true if the distance is less than the radius of the circle
+            return (dx * dx + dy * dy <= (circle.radius * circle.radius));
+        }
+
+    //#endregion
+
+
+
+    //#region Movement
+
+        private move(): void {
+            if (!this.flag_ready || !this.flag_can_move || this.state === State.Dead || !this.stage.actors.includes(this)) {
+                return;
+            }
+
+            // Apply acceleration to velocity
+            this.velocity.x += this.acceleration.x;
+            this.velocity.y += this.acceleration.y;
+
+            // Normalize velocity to maintain consistent speed in all directions
+            const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+            if (speed > this.maxVelocity) {
+                const normalizationFactor = this.maxVelocity / speed;
+                this.velocity.x *= normalizationFactor;
+                this.velocity.y *= normalizationFactor;
+            }
+
+                
+            // Update the last non-zero velocity before applying damping
+            if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+                this.lastVelocity.x = this.velocity.x;
+                this.lastVelocity.y = this.velocity.y;
+            }
+
+            // Apply damping to slow down smoothly and friction if no input acceleration
+            this.applyDampingAndFriction();
+
+            // Update state based on current velocity
+            this.updateStateBasedOnMovement();
+
+            // Update position and last position
+            this.position.x += this.velocity.x;
+            this.position.y += this.velocity.y;
+            this.lastPosition.x = this.position.x;
+            this.lastPosition.y = this.position.y;
+
+            // Ensure stopping movement at very low velocity
+            this.stopMovementAtLowVelocity();
+
+            // Update hitbox and hurtbox positions accordingly
+            this.updateBoxes();
+        }
+
+        private applyDampingAndFriction(): void {
+            const damping = 0.99;  // Reduce speed by 1% each frame
+            this.velocity.x *= damping;
+            this.velocity.y *= damping;
+
+            if (Math.abs(this.acceleration.x) < 0.01) {
+                this.velocity.x *= (1 - this.friction / 100);
+            }
+            if (Math.abs(this.acceleration.y) < 0.01) {
+                this.velocity.y *= (1 - this.friction / 100);
+            }
+        }
+
+        private updateStateBasedOnMovement(): void {
+            if (Math.abs(this.velocity.x) > this.minVelocity || Math.abs(this.velocity.y) > this.minVelocity) {
+                this.state = State.Walking;
+            } else {
+                if (this.state !== State.Idle) this.delayStateChange(State.Idle, 2);
+            }
+        }
+
+        private stopMovementAtLowVelocity(): void {
+            if (Math.abs(this.velocity.x) < this.minVelocity) {
+                this.velocity.x = 0;
+            }
+            if (Math.abs(this.velocity.y) < this.minVelocity) {
+                this.velocity.y = 0;
+            }
+        }
+
+        private updateBoxes() : void {
+            this.actorHurtbox.box.x = this.position.x;
+            this.actorHurtbox.box.y = this.position.y;
+            this.actorHitbox.box.x = this.position.x;
+            this.actorHitbox.box.y = this.position.y;
+        }
+
+    //#endregion
+
+
+
+    //#region Input
+
+        public doAction(action:InputKey, pressed:boolean = false) {
+            // Update the state of the key
+            this.keyState[InputKey[action]] = pressed;
+
+            // Horizontal movement logic
+            if (this.keyState[InputKey.Left] && !this.keyState[InputKey.Right]) {
+                this.acceleration.x = -this.accelerationRate;
+            } else if (this.keyState[InputKey.Right] && !this.keyState[InputKey.Left]) {
+                this.acceleration.x = this.accelerationRate;
+            } else {
+                this.acceleration.x = 0;
+            }
+
+            // Vertical movement logic
+            if (this.keyState[InputKey.Up] && !this.keyState[InputKey.Down]) {
+                this.acceleration.y = -this.accelerationRate;
+            } else if (this.keyState[InputKey.Down] && !this.keyState[InputKey.Up]) {
+                this.acceleration.y = this.accelerationRate;
+            } else {
+                this.acceleration.y = 0;
+            }
+        }
+
+    //#endregion
 
 }

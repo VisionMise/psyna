@@ -49,6 +49,12 @@ export class Stage {
     get canvas() {
         return this.stageCanvas;
     }
+    get width() {
+        return this.stageCanvas.width;
+    }
+    get height() {
+        return this.stageCanvas.height;
+    }
     get level() {
         return this.currentLevel;
     }
