@@ -69,11 +69,11 @@ export class Actor {
         // Movement
         protected velocity:{x:number, y:number}     = {x:0, y:0};
         protected acceleration:{x:number, y:number} = {x:0, y:0};
-        protected maxAcceleration:number            = 3;
-        protected accelerationRate:number           = 1;
+        protected maxAcceleration:number            = 8;
+        protected accelerationRate:number           = 4;
         protected lastPosition:Position             = {x:0, y:0};
         protected lastVelocity:{x:number, y:number} = {x:0, y:10};
-        protected maxVelocity:number                = 7;
+        protected maxVelocity:number                = 10;
         protected minVelocity:number                = 0.1;
         protected friction:number                   = 45;
 
@@ -423,7 +423,10 @@ export class Actor {
             // Calculate the actual center position on the canvas
             let posX = nextX * this.stage.level.scale + this.stage.level.xOffset;
             let posY = nextY * this.stage.level.scale + this.stage.level.yOffset;
-            let radius = this.size.width * this.stage.level.scale / 2;
+
+            // size
+            let sizeX = (this.size.width * this.stage.level.scale) / 2;
+            let sizeY = (this.size.height * this.stage.level.scale) / 2;
 
             // check for collision
             for (let wall of walls) {
@@ -432,7 +435,7 @@ export class Actor {
                 let { x, y, width, height } = wall.box as BoxRect;
 
                 // check for collision
-                if (posX + radius > x && posX - radius < x + width && posY + radius > y && posY - radius < y + height) {
+                if (posX + sizeX > x && posX - sizeX < x + width && posY + sizeY > y && posY - sizeY < y + height) {
                     return true;
                 }
                 
@@ -449,71 +452,23 @@ export class Actor {
     //#region Movement
 
         private move(): void {
+
+            // Do not move if not ready, dead, or not in the stage
             if (!this.flag_ready || !this.flag_can_move || this.state === State.Dead || !this.stage.actors.includes(this)) {
                 return;
             }
 
-            // Apply acceleration to velocity
-            this.velocity.x += this.acceleration.x;
-            this.velocity.y += this.acceleration.y;
+            // Calculate velocity based on acceleration
+            this.calculateVelocity();
 
-            // Normalize velocity to maintain consistent speed in all directions
-            const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
-            if (speed > this.maxVelocity) {
-                const normalizationFactor = this.maxVelocity / speed;
-                this.velocity.x *= normalizationFactor;
-                this.velocity.y *= normalizationFactor;
-            }
-
-                
-            // Update the last non-zero velocity before applying damping
-            if (this.velocity.x !== 0 || this.velocity.y !== 0) {
-                this.lastVelocity.x = this.velocity.x;
-                this.lastVelocity.y = this.velocity.y;
-            }
+            // Check for wall collisions
+            this.checkForWallCollisions();
 
             // Apply damping to slow down smoothly and friction if no input acceleration
             this.applyDampingAndFriction();
 
             // Update state based on current velocity
             this.updateStateBasedOnMovement();
-
-
-            // Update position and last position
-            this.position.x += this.velocity.x;
-            this.position.y += this.velocity.y;
-
-             // Check for collisions with the level walls on x axis
-            if (this.collidingWithLevel(this.position.x, this.lastPosition.y)) {
-
-                // Stop movement if colliding with walls
-                // Reset acceleration to prevent further movement
-                // Reset position to last non-colliding position
-                this.velocity.x     = 0;
-                this.acceleration.x = 0;
-                this.position.x     = this.lastPosition.x;
-
-            } else {
-
-                // Update last position if not colliding
-                this.lastPosition.x = this.position.x;
-            }
-
-            // Check for collisions with the level walls on y axis
-            if (this.collidingWithLevel(this.lastPosition.x, this.position.y)) {
-
-                // Stop movement if colliding with walls
-                // Reset acceleration to prevent further movement
-                // Reset position to last non-colliding position
-                this.velocity.y     = 0;
-                this.acceleration.y = 0;
-                this.position.y     = this.lastPosition.y;
-
-            } else {
-
-                // Update last position if not colliding
-                this.lastPosition.y = this.position.y;
-            }
 
             // Ensure stopping movement at very low velocity
             this.stopMovementAtLowVelocity();
@@ -536,11 +491,20 @@ export class Actor {
         }
 
         private updateStateBasedOnMovement(): void {
-            if (Math.abs(this.velocity.x) > this.minVelocity || Math.abs(this.velocity.y) > this.minVelocity) {
-                this.state = State.Walking;
-            } else {
-                if (this.state !== State.Idle) this.delayStateChange(State.Idle, 2);
+
+            if (this.state == State.Hurt || this.state == State.Dead) return;
+
+            // make sure the position is changing
+            if (this.position.x !== this.lastPosition.x || this.position.y !== this.lastPosition.y) {
+
+                // if the actor is not walking
+                // set the state to walking
+                this.state = State.Walking
+
+                return;
             }
+            
+            if (this.state !== State.Idle) this.delayStateChange(State.Idle, 2);
         }
 
         private stopMovementAtLowVelocity(): void {
@@ -549,6 +513,66 @@ export class Actor {
             }
             if (Math.abs(this.velocity.y) < this.minVelocity) {
                 this.velocity.y = 0;
+            }
+        }
+
+        private checkForWallCollisions() : boolean {
+            
+            // Predict the next position based on current velocity
+            // Used for collision detection
+            const nextX = this.position.x + this.velocity.x;
+            const nextY = this.position.y + this.velocity.y;
+
+            // Collisions
+            // Check for collisions on both x and y axis
+            let collisionX = this.collidingWithLevel(nextX, this.position.y);
+            let collisionY = this.collidingWithLevel(this.position.x, nextY);
+
+            // if there is a collision on x axis
+            // stop movement on x axis
+            if (collisionX) {
+                this.velocity.x     = 0;
+                this.acceleration.x = 0;
+                this.position.x     = this.lastPosition.x;
+            } else {
+                this.lastPosition.x = this.position.x;
+                this.position.x     = nextX;
+            }
+
+            // if there is a collision on y axis
+            // stop movement on y axis
+            if (collisionY) {
+                this.velocity.y     = 0
+                this.acceleration.y = 0;
+                this.position.y     = this.lastPosition.y;
+            } else {
+                this.lastPosition.y = this.position.y;
+                this.position.y     = nextY;
+            }
+
+            // if there is a collision on x or y axis
+            // return true
+            return collisionX || collisionY;
+        }
+
+        private calculateVelocity() : void {
+            
+            // Apply acceleration to velocity
+            this.velocity.x += this.acceleration.x;
+            this.velocity.y += this.acceleration.y;
+
+            // Normalize velocity to maintain consistent speed in all directions
+            const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+            if (speed > this.maxVelocity) {
+                const normalizationFactor = this.maxVelocity / speed;
+                this.velocity.x *= normalizationFactor;
+                this.velocity.y *= normalizationFactor;
+            }
+
+            // Update the last non-zero velocity before applying damping
+            if (this.velocity.x !== 0 || this.velocity.y !== 0) {
+                this.lastVelocity.x = this.velocity.x;
+                this.lastVelocity.y = this.velocity.y;
             }
         }
 
