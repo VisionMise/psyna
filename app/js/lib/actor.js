@@ -246,17 +246,6 @@ export class Actor {
         context.arc(x, y, radius, 0, Math.PI * 2, true);
         context.fill();
         context.closePath();
-        // draw the stage walls
-        const walls = this.stage.level.walls;
-        context.strokeStyle = 'black';
-        context.lineWidth = 2;
-        context.beginPath();
-        for (let wall of walls) {
-            let { x, y, width, height } = wall.box;
-            context.rect(x, y, width, height);
-            context.stroke();
-        }
-        context.closePath();
         // Drawing the hurtbox
         if (this.flag_draw_hurtbox && this.actorHurtbox.shape == Shape.Circle) {
             let circle = this.actorHurtbox.box;
@@ -320,7 +309,7 @@ export class Actor {
         // Calculate the actual center position on the canvas
         let posX = nextX * this.stage.level.scale + this.stage.level.xOffset;
         let posY = nextY * this.stage.level.scale + this.stage.level.yOffset;
-        let radius = this.size.width * this.stage.level.scale / 1.5;
+        let radius = this.size.width * this.stage.level.scale / 2;
         // check for collision
         for (let wall of walls) {
             // wall box
@@ -332,41 +321,10 @@ export class Actor {
         }
         return false;
     }
-    // private collidingWithLevel(nextX: number, nextY: number): boolean {
-    //     const walls = this.stage.level.walls;
-    //     let radius = this.size.width * this.stage.level.scale / 2; // Assuming size.width is the diameter
-    //     // Calculate the next central position on the canvas with proposed movements
-    //     let posX = (nextX * this.stage.level.scale) + this.stage.level.xOffset;
-    //     let posY = (nextY * this.stage.level.scale) + this.stage.level.yOffset;
-    //     // Check for collision against each wall
-    //     for (let wall of walls) {
-    //         let { x, y, width, height } = wall.box as BoxRect;
-    //         // Scale and offset wall coordinates
-    //         x = x * this.stage.level.scale + this.stage.level.xOffset;
-    //         y = y * this.stage.level.scale + this.stage.level.yOffset;
-    //         width *= this.stage.level.scale;
-    //         height *= this.stage.level.scale;
-    //         // Collision check
-    //         if (posX + radius > x && posX - radius < x + width && posY + radius > y && posY - radius < y + height) {
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
     //#endregion
     //#region Movement
     move() {
         if (!this.flag_ready || !this.flag_can_move || this.state === State.Dead || !this.stage.actors.includes(this)) {
-            return;
-        }
-        // next position
-        let nextX = this.position.x + this.velocity.x;
-        let nextY = this.position.y + this.velocity.y;
-        // Check for collisions with the level walls
-        if (this.collidingWithLevel(this.position.x, this.position.y)) {
-            // Stop movement if colliding with walls
-            this.velocity.x = 0;
-            this.velocity.y = 0;
             return;
         }
         // Apply acceleration to velocity
@@ -391,8 +349,32 @@ export class Actor {
         // Update position and last position
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
-        this.lastPosition.x = this.position.x;
-        this.lastPosition.y = this.position.y;
+        // Check for collisions with the level walls on x axis
+        if (this.collidingWithLevel(this.position.x, this.lastPosition.y)) {
+            // Stop movement if colliding with walls
+            // Reset acceleration to prevent further movement
+            // Reset position to last non-colliding position
+            this.velocity.x = 0;
+            this.acceleration.x = 0;
+            this.position.x = this.lastPosition.x;
+        }
+        else {
+            // Update last position if not colliding
+            this.lastPosition.x = this.position.x;
+        }
+        // Check for collisions with the level walls on y axis
+        if (this.collidingWithLevel(this.lastPosition.x, this.position.y)) {
+            // Stop movement if colliding with walls
+            // Reset acceleration to prevent further movement
+            // Reset position to last non-colliding position
+            this.velocity.y = 0;
+            this.acceleration.y = 0;
+            this.position.y = this.lastPosition.y;
+        }
+        else {
+            // Update last position if not colliding
+            this.lastPosition.y = this.position.y;
+        }
         // Ensure stopping movement at very low velocity
         this.stopMovementAtLowVelocity();
         // Update hitbox and hurtbox positions accordingly

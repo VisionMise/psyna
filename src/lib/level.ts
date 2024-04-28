@@ -33,7 +33,7 @@ export class Level {
 
     // Flags
     private flag_ready:boolean              = false;
-    private flag_draw_colliders:boolean     = true;
+    private flag_draw_colliders:boolean     = false;
     private flag_scale_extrusion:boolean    = true;    
 
     // Scale and Offset

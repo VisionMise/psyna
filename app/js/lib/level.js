@@ -15,7 +15,7 @@ export class Level {
         this.colliders = [];
         // Flags
         this.flag_ready = false;
-        this.flag_draw_colliders = true;
+        this.flag_draw_colliders = false;
         this.flag_scale_extrusion = true;
         // Scale and Offset
         this.scale = 1;
