@@ -1,5 +1,21 @@
+//#region Imports
 import { InputKey } from "./input.js";
 import { Shape } from "./stage.js";
+//#endregion
+//#region Enumerators
+export var StatusEffect;
+(function (StatusEffect) {
+    StatusEffect[StatusEffect["None"] = 0] = "None";
+    StatusEffect[StatusEffect["Poisoned"] = 1] = "Poisoned";
+    StatusEffect[StatusEffect["Burning"] = 2] = "Burning";
+    StatusEffect[StatusEffect["Frozen"] = 3] = "Frozen";
+    StatusEffect[StatusEffect["Stunned"] = 4] = "Stunned";
+    StatusEffect[StatusEffect["Slowed"] = 5] = "Slowed";
+    StatusEffect[StatusEffect["Hasted"] = 6] = "Hasted";
+    StatusEffect[StatusEffect["Regen"] = 7] = "Regen";
+    StatusEffect[StatusEffect["Shielded"] = 8] = "Shielded";
+    StatusEffect[StatusEffect["Invincible"] = 9] = "Invincible";
+})(StatusEffect || (StatusEffect = {}));
 // Actor State
 export var State;
 (function (State) {
@@ -9,6 +25,8 @@ export var State;
     State[State["Hurt"] = 3] = "Hurt";
     State[State["Dead"] = 4] = "Dead";
 })(State || (State = {}));
+//#endregion
+//#region Actor Class
 export class Actor {
     //#endregion
     //#region Constructor
@@ -323,6 +341,41 @@ export class Actor {
         }
         return false;
     }
+    checkForWallCollisions() {
+        // Predict the next position based on current velocity
+        // Used for collision detection
+        const nextX = this.position.x + this.velocity.x;
+        const nextY = this.position.y + this.velocity.y;
+        // Collisions
+        // Check for collisions on both x and y axis
+        let collisionX = this.collidingWithLevel(nextX, this.position.y);
+        let collisionY = this.collidingWithLevel(this.position.x, nextY);
+        // if there is a collision on x axis
+        // stop movement on x axis
+        if (collisionX) {
+            this.velocity.x = 0;
+            this.acceleration.x = 0;
+            this.position.x = this.lastPosition.x;
+        }
+        else {
+            this.lastPosition.x = this.position.x;
+            this.position.x = nextX;
+        }
+        // if there is a collision on y axis
+        // stop movement on y axis
+        if (collisionY) {
+            this.velocity.y = 0;
+            this.acceleration.y = 0;
+            this.position.y = this.lastPosition.y;
+        }
+        else {
+            this.lastPosition.y = this.position.y;
+            this.position.y = nextY;
+        }
+        // if there is a collision on x or y axis
+        // return true
+        return collisionX || collisionY;
+    }
     //#endregion
     //#region Movement
     move() {
@@ -375,41 +428,6 @@ export class Actor {
             this.velocity.y = 0;
         }
     }
-    checkForWallCollisions() {
-        // Predict the next position based on current velocity
-        // Used for collision detection
-        const nextX = this.position.x + this.velocity.x;
-        const nextY = this.position.y + this.velocity.y;
-        // Collisions
-        // Check for collisions on both x and y axis
-        let collisionX = this.collidingWithLevel(nextX, this.position.y);
-        let collisionY = this.collidingWithLevel(this.position.x, nextY);
-        // if there is a collision on x axis
-        // stop movement on x axis
-        if (collisionX) {
-            this.velocity.x = 0;
-            this.acceleration.x = 0;
-            this.position.x = this.lastPosition.x;
-        }
-        else {
-            this.lastPosition.x = this.position.x;
-            this.position.x = nextX;
-        }
-        // if there is a collision on y axis
-        // stop movement on y axis
-        if (collisionY) {
-            this.velocity.y = 0;
-            this.acceleration.y = 0;
-            this.position.y = this.lastPosition.y;
-        }
-        else {
-            this.lastPosition.y = this.position.y;
-            this.position.y = nextY;
-        }
-        // if there is a collision on x or y axis
-        // return true
-        return collisionX || collisionY;
-    }
     calculateVelocity() {
         // Apply acceleration to velocity
         this.velocity.x += this.acceleration.x;
@@ -435,28 +453,19 @@ export class Actor {
     }
     //#endregion
     //#region Input
-    doAction(action, pressed = false) {
+    doDispatchedAction(action, pressed = false) {
         // Update the state of the key
         this.keyState[InputKey[action]] = pressed;
         // Horizontal movement logic
-        if (this.keyState[InputKey.Left] && !this.keyState[InputKey.Right]) {
-            this.acceleration.x = -this.accelerationRate;
-        }
-        else if (this.keyState[InputKey.Right] && !this.keyState[InputKey.Left]) {
-            this.acceleration.x = this.accelerationRate;
-        }
-        else {
-            this.acceleration.x = 0;
-        }
+        const left = this.keyState[InputKey.Left] && !this.keyState[InputKey.Right];
+        const right = this.keyState[InputKey.Right] && !this.keyState[InputKey.Left];
+        const deltaH = (left ? -1 : 0) + (right ? 1 : 0);
+        this.acceleration.x = deltaH * this.accelerationRate;
         // Vertical movement logic
-        if (this.keyState[InputKey.Up] && !this.keyState[InputKey.Down]) {
-            this.acceleration.y = -this.accelerationRate;
-        }
-        else if (this.keyState[InputKey.Down] && !this.keyState[InputKey.Up]) {
-            this.acceleration.y = this.accelerationRate;
-        }
-        else {
-            this.acceleration.y = 0;
-        }
+        const up = this.keyState[InputKey.Up] && !this.keyState[InputKey.Down];
+        const down = this.keyState[InputKey.Down] && !this.keyState[InputKey.Up];
+        const deltaV = (up ? -1 : 0) + (down ? 1 : 0);
+        this.acceleration.y = deltaV * this.accelerationRate;
     }
 }
+//#endregion

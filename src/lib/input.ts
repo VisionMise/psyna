@@ -37,6 +37,7 @@ export abstract class Input {
 }
 
 
+
 export class KeyboardAndMouseInput extends Input {
     private keyBindings: Map<InputKey, string[]> = new Map();
     private keyStates: Map<InputKey, boolean> = new Map();
@@ -112,6 +113,8 @@ export class KeyboardAndMouseInput extends Input {
     }
 }
 
+
+
 export class GamepadInput extends Input {
 
     private gamepadInput: Gamepad;
@@ -170,9 +173,6 @@ export class GamepadInput extends Input {
         requestAnimationFrame(this.pollGamepad);
     };
 
-        
-
-
     private handleAxis(xAxis: number, yAxis: number): boolean {
         // Handle horizontal movement
         const xd:boolean = this.handleAxisDirection(InputKey.Right, InputKey.Left, xAxis);
@@ -208,7 +208,6 @@ export class GamepadInput extends Input {
             return false;
         }
     }
-
         
     private setKeyState(key: InputKey, pressed: boolean): void {
 
@@ -232,7 +231,6 @@ export class GamepadInput extends Input {
             this.Events.dispatchEvent(new CustomEvent('released', { detail: { action: key, key, state: 'released' } }));
         }
     }
-
 
     private handleButtons(buttons: GamepadButton[], movement:boolean = false): void {
 
@@ -292,7 +290,10 @@ export class GamepadInput extends Input {
     public getKeyState(key: InputKey): boolean {
         return this.keyStates.get(key) || false;
     }
+
 }
+
+
 
 export class InputDispatcher {
     private input: Input;
