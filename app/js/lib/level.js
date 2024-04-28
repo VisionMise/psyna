@@ -15,7 +15,7 @@ export class Level {
         this.colliders = [];
         // Flags
         this.flag_ready = false;
-        this.flag_draw_colliders = false;
+        this.flag_draw_colliders = true;
         this.flag_scale_extrusion = true;
         // Scale and Offset
         this.scale = 1;
@@ -72,7 +72,7 @@ export class Level {
                 context.beginPath();
                 context.strokeStyle = '#adff0088';
                 context.fillStyle = '#ad000054';
-                if (collider.shape === Shape.Rectagle) {
+                if (collider.shape === Shape.Rectangle) {
                     // draw the rectangle
                     const rect = collider.box;
                     context.rect(collider.box.x, collider.box.y, rect.width, rect.height);

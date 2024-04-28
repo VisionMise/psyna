@@ -26,28 +26,28 @@ export interface Size {
     height:number;
 }
 
-export interface Rect {
+export interface BoxRect {
     x:number;
     y:number;
     width:number;
     height:number;
 }
 
-export interface Circle {
+export interface BoxCircle {
     x:number;
     y:number;
     radius:number;
 }
 
 export enum Shape {
-    Rectagle,
+    Rectangle,
     Circle
 }
 
 
 export interface Collider {
     shape:Shape;
-    box:Rect|Circle;
+    box:BoxRect|BoxCircle;
     active:boolean;
 }
 
@@ -144,7 +144,7 @@ export class Stage {
         }
 
         public static createRectCollider(x:number, y:number, width:number, height:number) : Collider {
-            return { shape: Shape.Rectagle, box: { x, y, width, height }, active: true };
+            return { shape: Shape.Rectangle, box: { x, y, width, height }, active: true };
         }
 
         public static createCircleCollider(x:number, y:number, radius:number) : Collider {

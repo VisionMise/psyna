@@ -83,7 +83,7 @@ export class Game {
             // Get the gamepad
             const gamepad = event.gamepad;
             // Find the gamepad input
-            const index = this.controller.findIndex(input => input.type == InputType.Gamepad && input.gamepad.index == gamepad.index);
+            const index = this.controller.findIndex(controller => controller.type == InputType.Gamepad);
             // Remove the gamepad input
             if (index >= 0) {
                 this.controller.splice(index, 1);

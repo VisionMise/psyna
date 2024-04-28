@@ -1,4 +1,4 @@
-import { Circle, Collider, Rect, Shape, Stage } from "./stage.js";
+import { BoxCircle, Collider, BoxRect, Shape, Stage } from "./stage.js";
 
 interface Config {
     atlas?: any;
@@ -33,7 +33,7 @@ export class Level {
 
     // Flags
     private flag_ready:boolean              = false;
-    private flag_draw_colliders:boolean     = false;
+    private flag_draw_colliders:boolean     = true;
     private flag_scale_extrusion:boolean    = true;    
 
     // Scale and Offset
@@ -114,16 +114,16 @@ export class Level {
                 context.strokeStyle = '#adff0088';
                 context.fillStyle   = '#ad000054';
 
-                if (collider.shape === Shape.Rectagle) {
+                if (collider.shape === Shape.Rectangle) {
 
                     // draw the rectangle
-                    const rect = collider.box as Rect;
+                    const rect = collider.box as BoxRect;
                     context.rect(collider.box.x, collider.box.y, rect.width, rect.height);
 
                 } else {
 
                     // draw the circle
-                    const circle = collider.box as Circle;
+                    const circle = collider.box as BoxCircle;
                     context.arc(collider.box.x, collider.box.y, circle.radius, 0, Math.PI * 2);
 
                 }

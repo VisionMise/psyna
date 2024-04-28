@@ -14,7 +14,7 @@ export var Filter;
 })(Filter || (Filter = {}));
 export var Shape;
 (function (Shape) {
-    Shape[Shape["Rectagle"] = 0] = "Rectagle";
+    Shape[Shape["Rectangle"] = 0] = "Rectangle";
     Shape[Shape["Circle"] = 1] = "Circle";
 })(Shape || (Shape = {}));
 export class Stage {
@@ -73,7 +73,7 @@ export class Stage {
         this.gameEngine.log(message, error);
     }
     static createRectCollider(x, y, width, height) {
-        return { shape: Shape.Rectagle, box: { x, y, width, height }, active: true };
+        return { shape: Shape.Rectangle, box: { x, y, width, height }, active: true };
     }
     static createCircleCollider(x, y, radius) {
         return { shape: Shape.Circle, box: { x, y, radius }, active: true };
