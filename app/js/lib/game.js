@@ -107,7 +107,7 @@ export class Game {
         dispatchers.forEach(dispatcher => {
             for (const action of actions) {
                 dispatcher.events.addEventListener(action, (event) => {
-                    actor.doDispatchedAction(action, event.detail.state == 'pressed');
+                    actor.setActionState(action, event.detail.state == 'pressed');
                 });
             }
         });

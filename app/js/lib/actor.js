@@ -38,21 +38,21 @@ export class Actor {
         this.flag_render_hitbox = false;
         this.flag_draw_hurtbox = true;
         this.flag_draw_hitbox = false;
-        this.flag_draw_direction = true;
-        this.flag_draw_velocity = true;
+        this.flag_draw_direction = false;
+        this.flag_draw_velocity = false;
         this.flag_draw_image = false;
         this.flag_can_be_hurt = false;
         this.flag_can_attack = false;
         this.flag_can_die = true;
         this.flag_can_move = true;
         // Movement
-        this.velocity = { x: 0, y: 0 };
-        this.acceleration = { x: 0, y: 0 };
-        this.maxAcceleration = 8;
-        this.accelerationRate = 4;
-        this.lastPosition = { x: 0, y: 0 };
+        this.curVelocity = { x: 0, y: 0 };
         this.lastVelocity = { x: 0, y: 10 };
-        this.maxVelocity = 10;
+        this.acceleration = { x: 0, y: 0 };
+        this.lastPosition = { x: 0, y: 0 };
+        this.maxAcceleration = 4;
+        this.accelerationRate = 1.2;
+        this.maxVelocity = 8;
         this.minVelocity = 0.1;
         this.friction = 45;
         // Input
@@ -139,28 +139,34 @@ export class Actor {
     }
     get movementDirection() {
         //return up, down, left, right
-        if (this.velocity.x > 0)
+        if (this.curVelocity.x > 0)
             return 'right';
-        if (this.velocity.x < 0)
+        if (this.curVelocity.x < 0)
             return 'left';
-        if (this.velocity.y > 0)
+        if (this.curVelocity.y > 0)
             return 'down';
-        if (this.velocity.y < 0)
+        if (this.curVelocity.y < 0)
             return 'up';
         return 'none';
     }
     get angle() {
-        if (this.velocity.x === 0 && this.velocity.y === 0) {
+        if (this.curVelocity.x === 0 && this.curVelocity.y === 0) {
             // Use the last non-zero velocity to maintain the previous direction
             return Math.atan2(this.lastVelocity.y, this.lastVelocity.x);
         }
         else {
             // Calculate the angle based on the current velocity
-            return Math.atan2(this.velocity.y, this.velocity.x);
+            return Math.atan2(this.curVelocity.y, this.curVelocity.x);
         }
     }
     get waitingOnDelayedState() {
         return (this.stateTimer != 0 && typeof this.stateTimer != 'undefined');
+    }
+    get speed() {
+        return Math.sqrt(this.curVelocity.x ** 2 + this.curVelocity.y ** 2);
+    }
+    get velocity() {
+        return this.curVelocity;
     }
     //#endregion
     //#region Methods
@@ -182,7 +188,7 @@ export class Actor {
         // Set the state
         this.state = State.Idle;
         // Set velocity
-        this.velocity = { x: 0, y: 0 };
+        this.curVelocity = { x: 0, y: 0 };
         // Set the hurtbox
         // same size and shape as the actor
         // active
@@ -237,17 +243,17 @@ export class Actor {
     draw(context) {
         if (!this.flag_ready)
             return;
-        // Calculate the actual center position on the canvas
+        // Calculate position on the canvas adjusted for scale and offset
         let x = this.position.x * this.stage.level.scale + this.stage.level.xOffset;
         let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
-        let radius = this.size.width * this.stage.level.scale / 2; // Assuming size.width is the diameter
+        let radius = this.size.width * this.stage.level.scale * 0.5;
         // Set fill style based on the state
         switch (this.state) {
             case State.Idle:
-                context.fillStyle = '#0088ff44';
+                context.fillStyle = '#0088ffaa';
                 break;
             case State.Walking:
-                context.fillStyle = '#00ff4444';
+                context.fillStyle = '#00ff44aa';
                 break;
             case State.Attacking:
                 context.fillStyle = '#aaff0044';
@@ -267,7 +273,7 @@ export class Actor {
         // Drawing the hurtbox
         if (this.flag_draw_hurtbox && this.actorHurtbox.shape == Shape.Circle) {
             let circle = this.actorHurtbox.box;
-            context.fillStyle = 'rgba(255, 234, 0, 0.22)';
+            context.fillStyle = '#ffea0044';
             context.beginPath();
             context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
             context.fill();
@@ -276,7 +282,7 @@ export class Actor {
         // Drawing the hitbox
         if (this.flag_draw_hitbox && this.actorHitbox.shape == Shape.Circle) {
             let circle = this.actorHitbox.box;
-            context.strokeStyle = 'rgba(255, 0, 0, 0.27)';
+            context.strokeStyle = '#ff000044';
             context.beginPath();
             context.arc(x, y, circle.radius * this.stage.level.scale, 0, Math.PI * 2, true);
             context.stroke();
@@ -303,8 +309,8 @@ export class Actor {
             context.fillText(this.movementDirection, x, y + 60);
         }
         if (this.flag_draw_velocity) {
-            context.fillText(`Vx: ${this.velocity.x.toFixed(2)}`, x, y + 70);
-            context.fillText(`Vy: ${this.velocity.y.toFixed(2)}`, x, y + 80);
+            context.fillText(`xV: ${this.curVelocity.x.toFixed(2)}`, x, y + 70);
+            context.fillText(`yV: ${this.curVelocity.y.toFixed(2)}`, x, y + 80);
         }
     }
     update() {
@@ -341,11 +347,11 @@ export class Actor {
         }
         return false;
     }
-    checkForWallCollisions() {
+    checkWallCollisions() {
         // Predict the next position based on current velocity
         // Used for collision detection
-        const nextX = this.position.x + this.velocity.x;
-        const nextY = this.position.y + this.velocity.y;
+        const nextX = this.position.x + this.curVelocity.x;
+        const nextY = this.position.y + this.curVelocity.y;
         // Collisions
         // Check for collisions on both x and y axis
         let collisionX = this.collidingWithLevel(nextX, this.position.y);
@@ -353,7 +359,7 @@ export class Actor {
         // if there is a collision on x axis
         // stop movement on x axis
         if (collisionX) {
-            this.velocity.x = 0;
+            this.curVelocity.x = 0;
             this.acceleration.x = 0;
             this.position.x = this.lastPosition.x;
         }
@@ -364,7 +370,7 @@ export class Actor {
         // if there is a collision on y axis
         // stop movement on y axis
         if (collisionY) {
-            this.velocity.y = 0;
+            this.curVelocity.y = 0;
             this.acceleration.y = 0;
             this.position.y = this.lastPosition.y;
         }
@@ -384,68 +390,66 @@ export class Actor {
             return;
         }
         // Calculate velocity based on acceleration
-        this.calculateVelocity();
+        this.calculateMovement();
         // Check for wall collisions
-        this.checkForWallCollisions();
-        // Apply damping to slow down smoothly and friction if no input acceleration
-        this.applyDampingAndFriction();
+        this.checkWallCollisions();
         // Update state based on current velocity
-        this.updateStateBasedOnMovement();
-        // Ensure stopping movement at very low velocity
-        this.stopMovementAtLowVelocity();
+        this.updateMovementState();
         // Update hitbox and hurtbox positions accordingly
-        this.updateBoxes();
+        this.updateCollision();
     }
     applyDampingAndFriction() {
         const damping = 1 - 0.0001;
-        this.velocity.x *= damping;
-        this.velocity.y *= damping;
+        this.curVelocity.x *= damping;
+        this.curVelocity.y *= damping;
         if (Math.abs(this.acceleration.x) < 0.01) {
-            this.velocity.x *= (1 - this.friction / 100);
+            this.curVelocity.x *= (1 - this.friction / 100);
         }
         if (Math.abs(this.acceleration.y) < 0.01) {
-            this.velocity.y *= (1 - this.friction / 100);
+            this.curVelocity.y *= (1 - this.friction / 100);
         }
     }
-    updateStateBasedOnMovement() {
+    updateMovementState() {
         if (this.state == State.Hurt || this.state == State.Dead)
             return;
         // make sure the position is changing
         if (this.position.x !== this.lastPosition.x || this.position.y !== this.lastPosition.y) {
             // if the actor is not walking
             // set the state to walking
-            this.state = State.Walking;
+            this.delayStateChange(State.Walking, 90);
             return;
         }
         if (this.state !== State.Idle)
             this.delayStateChange(State.Idle, 2);
     }
-    stopMovementAtLowVelocity() {
-        if (Math.abs(this.velocity.x) < this.minVelocity) {
-            this.velocity.x = 0;
+    clampVelocity() {
+        if (Math.abs(this.curVelocity.x) < this.minVelocity) {
+            this.curVelocity.x = 0;
         }
-        if (Math.abs(this.velocity.y) < this.minVelocity) {
-            this.velocity.y = 0;
+        if (Math.abs(this.curVelocity.y) < this.minVelocity) {
+            this.curVelocity.y = 0;
         }
     }
-    calculateVelocity() {
+    calculateMovement() {
         // Apply acceleration to velocity
-        this.velocity.x += this.acceleration.x;
-        this.velocity.y += this.acceleration.y;
-        // Normalize velocity to maintain consistent speed in all directions
-        const speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
-        if (speed > this.maxVelocity) {
-            const normalizationFactor = this.maxVelocity / speed;
-            this.velocity.x *= normalizationFactor;
-            this.velocity.y *= normalizationFactor;
+        this.curVelocity.x += this.acceleration.x;
+        this.curVelocity.y += this.acceleration.y;
+        if (this.speed > this.maxVelocity) {
+            const normalizationFactor = this.maxVelocity / this.speed;
+            this.curVelocity.x *= normalizationFactor;
+            this.curVelocity.y *= normalizationFactor;
         }
         // Update the last non-zero velocity before applying damping
-        if (this.velocity.x !== 0 || this.velocity.y !== 0) {
-            this.lastVelocity.x = this.velocity.x;
-            this.lastVelocity.y = this.velocity.y;
+        if (this.curVelocity.x !== 0 || this.curVelocity.y !== 0) {
+            this.lastVelocity.x = this.curVelocity.x;
+            this.lastVelocity.y = this.curVelocity.y;
         }
+        // Apply damping to slow down smoothly and friction if no input acceleration
+        this.applyDampingAndFriction();
+        // Ensure stopping movement at very low velocity
+        this.clampVelocity();
     }
-    updateBoxes() {
+    updateCollision() {
         this.actorHurtbox.box.x = this.position.x;
         this.actorHurtbox.box.y = this.position.y;
         this.actorHitbox.box.x = this.position.x;
@@ -453,19 +457,19 @@ export class Actor {
     }
     //#endregion
     //#region Input
-    doDispatchedAction(action, pressed = false) {
+    setActionState(action, pressed = false) {
         // Update the state of the key
         this.keyState[InputKey[action]] = pressed;
         // Horizontal movement logic
         const left = this.keyState[InputKey.Left] && !this.keyState[InputKey.Right];
         const right = this.keyState[InputKey.Right] && !this.keyState[InputKey.Left];
-        const deltaH = (left ? -1 : 0) + (right ? 1 : 0);
-        this.acceleration.x = deltaH * this.accelerationRate;
+        const deltaX = (left ? -1 : 0) + (right ? 1 : 0);
+        this.acceleration.x = deltaX * this.accelerationRate;
         // Vertical movement logic
         const up = this.keyState[InputKey.Up] && !this.keyState[InputKey.Down];
         const down = this.keyState[InputKey.Down] && !this.keyState[InputKey.Up];
-        const deltaV = (up ? -1 : 0) + (down ? 1 : 0);
-        this.acceleration.y = deltaV * this.accelerationRate;
+        const deltaY = (up ? -1 : 0) + (down ? 1 : 0);
+        this.acceleration.y = deltaY * this.accelerationRate;
     }
 }
 //#endregion
