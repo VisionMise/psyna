@@ -160,17 +160,9 @@
                     return;
                 }
 
-                // Load the image
-                this.loadImage().then(() => {
-
-                    this.stage.log(`Actor Loaded: ${this.id}`);
-                    this.flag_ready = true;
-
-                }).catch(() => {
-                    
-                    this.stage.log(`Failed to load actor image [${this.id}]: ${this.actorImageURL}`);
-
-                });
+                // Set ready
+                this.flag_ready = true;
+                this.stage.log(`Created ${this.constructor.name}: ${this.id}`);
             }
 
         //#endregion
@@ -501,6 +493,13 @@
                 const nextX = this.position.x + this.curVelocity.x;
                 const nextY = this.position.y + this.curVelocity.y;
 
+                // if last position is not set
+                // set it to the current position
+                if (this.lastPosition.x === 0 && this.lastPosition.y === 0) {
+                    this.lastPosition.x = this.position.x;
+                    this.lastPosition.y = this.position.y;
+                }
+
                 // Collisions
                 // Check for collisions on both x and y axis
                 let collisionX = this.collidingWithLevel(nextX, this.position.y);
@@ -509,7 +508,7 @@
                 // if there is a collision on x axis
                 // stop movement on x axis
                 if (collisionX) {
-                    this.curVelocity.x     = 0;
+                    this.curVelocity.x  = 0;
                     this.acceleration.x = 0;
                     this.position.x     = this.lastPosition.x;
                 } else {
@@ -520,7 +519,7 @@
                 // if there is a collision on y axis
                 // stop movement on y axis
                 if (collisionY) {
-                    this.curVelocity.y     = 0
+                    this.curVelocity.y  = 0
                     this.acceleration.y = 0;
                     this.position.y     = this.lastPosition.y;
                 } else {

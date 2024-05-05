@@ -81,6 +81,33 @@ export class Stage {
     addActor(actor) {
         this.actorList.push(actor);
     }
+    async whenReady() {
+        return new Promise((resolve) => {
+            const interval = setInterval(() => {
+                if (this.flag_ready) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+    randomPosition(actorSize = { height: 128, width: 128 }) {
+        const walkableArea = this.currentLevel.walkableArea;
+        const screenSize = this.getScreenSize();
+        // Calculate scale factors
+        const scaleX = screenSize.width / walkableArea.width;
+        const scaleY = screenSize.height / walkableArea.height;
+        // Calculate maximum valid positions
+        let maxX = (walkableArea.x + walkableArea.width - actorSize.width) * scaleX;
+        let maxY = (walkableArea.y + walkableArea.height - actorSize.height) * scaleY;
+        // Calculate minimum valid positions
+        let minX = walkableArea.x * scaleX;
+        let minY = walkableArea.y * scaleY;
+        // Generate random positions within bounds
+        let x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+        let y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+        return { x, y };
+    }
     //#endregion
     //#region Private Methods
     bindEvents() {

@@ -1,6 +1,7 @@
 import { Player } from "./player.js";
 import { Stage } from "./stage.js";
 import { KeyboardAndMouseInput, GamepadInput, InputDispatcher, InputType, InputKey } from "./input.js";
+import { Enemy } from "./enemy.js";
 export class Game {
     constructor() {
         this.gameStage = null;
@@ -8,6 +9,7 @@ export class Game {
         this.dispatcher = [];
         this.eventTarget = new EventTarget();
         this.players = [];
+        this.enemies = [];
         this.x = 0;
         // Log the game
         this.log('Game loaded');
@@ -21,23 +23,32 @@ export class Game {
     get player() {
         return this.players[0];
     }
-    start() {
+    async start() {
         // Setup the game
-        this.setup();
+        await this.setup();
         // Start animation loop
         this.animate();
         // Log the game
         this.log('Game started');
     }
-    setup() {
+    async setup() {
         // init input control
         this.initKeyboardInput();
         this.initGamepadInput();
         // create game stage
         this.gameStage = new Stage("01", this);
+        // wait for the stage to be ready
+        await this.gameStage.whenReady();
+        // wait for the level to be ready
+        await this.gameStage.level.whenReady();
         // create the player
-        const player1 = new Player(this.gameStage);
+        const rndPlayerPos = this.gameStage.randomPosition();
+        const player1 = new Player(this.gameStage, rndPlayerPos);
         this.players.push(player1);
+        // create the enemy
+        const rndEnemyPos = this.gameStage.randomPosition();
+        const enemy1 = new Enemy(this.gameStage, rndEnemyPos);
+        this.enemies.push(enemy1);
         // bind the controls
         this.bindControls(this.dispatcher, player1);
     }

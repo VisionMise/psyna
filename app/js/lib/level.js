@@ -13,6 +13,7 @@ export class Level {
         this.tileAtlas = {};
         // Colliders
         this.colliders = [];
+        this.walkable = [];
         // Flags
         this.flag_ready = false;
         this.flag_draw_colliders = false;
@@ -21,6 +22,7 @@ export class Level {
         this.scale = 1;
         this.xOffset = 0;
         this.yOffset = 0;
+        this.zoomFactor = 1;
         // Set the level name
         this.mapName = name;
         // Set the stage
@@ -31,12 +33,42 @@ export class Level {
             this.calcScale();
             // Generate the map
             this.map = this.generateMapFromAtlas(this.tileAtlas);
+            // generate the colliders
+            this.colliders = this.generateColliders(this.map, // map
+            this.xOffset, // x offset
+            this.yOffset, // y offset
+            this.tileSize.width * this.scale, // tile width
+            this.tileSize.height * this.scale // tile height
+            );
+            // generate the walkable area
+            this.walkable = this.generateWalkable();
             // Load the images
             this.loadImages().then(() => this.flag_ready = true);
         });
     }
     get walls() {
         return this.colliders;
+    }
+    get floor() {
+        return this.walkable;
+    }
+    get walkableArea() {
+        // Get the screen dimensions
+        const screenSize = this.stage.getScreenSize();
+        const canvasSize = { width: this.stage.canvas.width, height: this.stage.canvas.height };
+        // Calculate scaling factor
+        const scaleFactor = Math.min(screenSize.width / canvasSize.width, screenSize.height / canvasSize.height);
+        // Scale the tile size
+        const scaledTileWidth = this.tileSize.width * this.scale * scaleFactor;
+        const scaledTileHeight = this.tileSize.height * this.scale * scaleFactor;
+        // Calculate the scaled walkable area
+        let area = {
+            x: this.xOffset + scaledTileWidth,
+            y: this.yOffset + scaledTileHeight,
+            width: (this.mapSize.width - 2) * scaledTileWidth,
+            height: (this.mapSize.height - 2) * scaledTileHeight
+        };
+        return area;
     }
     get drawWallColliders() {
         return this.flag_draw_colliders;
@@ -69,8 +101,8 @@ export class Level {
                 const collider = this.colliders[i];
                 // draw the collider
                 context.beginPath();
-                context.strokeStyle = '#adff0088';
-                context.fillStyle = '#ad000054';
+                context.strokeStyle = '#adff0038';
+                context.fillStyle = '#ad000024';
                 if (collider.shape === Shape.Rectangle) {
                     // draw the rectangle
                     const rect = collider.box;
@@ -85,6 +117,14 @@ export class Level {
                 context.fill();
                 context.closePath();
             }
+            // draw the walkable area
+            context.beginPath();
+            context.strokeStyle = '#37ff00';
+            context.fillStyle = '#2200ffa4';
+            context.rect(this.walkableArea.x, this.walkableArea.y, this.walkableArea.width, this.walkableArea.height);
+            context.stroke();
+            context.fill();
+            context.closePath();
         }
     }
     whenReady() {
@@ -111,7 +151,7 @@ export class Level {
         const scaleX = context.canvas.width / xPixels;
         const scaleY = context.canvas.height / yPixels;
         // Use the smaller scale to ensure the entire map fits into the canvas
-        scale = Math.min(scaleX, scaleY);
+        scale = Math.min(scaleX, scaleY) / this.zoomFactor;
         // vertical offset
         let yOffset = (context.canvas.height - (this.mapSize.height * tileSize.height * scale)) / 2;
         // horizontal offset
@@ -257,11 +297,53 @@ export class Level {
         // return the colliders
         return colliders;
     }
+    generateWalkable() {
+        const walkable = [];
+        // Loop through the rows
+        for (let y = 0; y < this.map.length; y++) {
+            for (let x = 0; x < this.map[y].length; x++) {
+                // Calculate the tile's canvas location
+                const tileX = x * this.tileSize.width * this.scale + this.xOffset;
+                const tileY = y * this.tileSize.height * this.scale + this.yOffset;
+                // Assume the tile is not a wall if it doesn't intersect with any colliders
+                const tileBox = {
+                    x: tileX,
+                    y: tileY,
+                    width: this.tileSize.width * this.scale,
+                    height: this.tileSize.height * this.scale
+                };
+                const isWall = this.colliders.some((collider) => {
+                    if (collider.shape === Shape.Rectangle) {
+                        const rect = collider.box;
+                        return this.isIntersecting(rect, tileBox);
+                    }
+                    return false;
+                });
+                if (!isWall) {
+                    const floor = {
+                        shape: Shape.Rectangle,
+                        box: tileBox,
+                        active: true
+                    };
+                    walkable.push(floor);
+                }
+            }
+        }
+        return walkable;
+    }
+    isIntersecting(box1, box2) {
+        return !(box2.x >= box1.x + box1.width ||
+            box2.x + box2.width <= box1.x ||
+            box2.y >= box1.y + box1.height ||
+            box2.y + box2.height <= box1.y);
+    }
     drawMap(context) {
         // if the level is not ready
         if (!this.flag_ready) {
             return;
         }
+        // generate the walkable area
+        this.walkable = this.generateWalkable();
         // generate the colliders
         this.colliders = this.generateColliders(this.map, // map
         this.xOffset, // x offset

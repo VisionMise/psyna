@@ -51,6 +51,12 @@ export interface Collider {
     active:boolean;
 }
 
+export interface NonCollidable {
+    shape:Shape;
+    box:BoxRect|BoxCircle;
+    active:boolean;
+}
+
 
 export class Stage {
 
@@ -153,6 +159,44 @@ export class Stage {
 
         public addActor(actor:Actor) : void {
             this.actorList.push(actor);
+        }
+
+        public async whenReady() : Promise<void> {
+            return new Promise<void>((resolve) => {
+
+                const interval = setInterval(() => {
+
+                    if (this.flag_ready) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+
+                }, 100);
+
+            });
+        }
+
+        public randomPosition(actorSize:Size = {height: 128, width: 128}) : Position {
+            const walkableArea = this.currentLevel.walkableArea;
+            const screenSize = this.getScreenSize();
+
+            // Calculate scale factors
+            const scaleX = screenSize.width / walkableArea.width;
+            const scaleY = screenSize.height / walkableArea.height;
+
+            // Calculate maximum valid positions
+            let maxX = (walkableArea.x + walkableArea.width - actorSize.width) * scaleX;
+            let maxY = (walkableArea.y + walkableArea.height - actorSize.height) * scaleY;
+
+            // Calculate minimum valid positions
+            let minX = walkableArea.x * scaleX;
+            let minY = walkableArea.y * scaleY;
+            
+            // Generate random positions within bounds
+            let x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+            let y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+
+            return { x, y };
         }
 
     //#endregion
@@ -288,10 +332,9 @@ export class Stage {
 
             // Draw the actors
             this.actorList.forEach(actor => actor.draw(this.stageContext));
-
         }
 
-        private getScreenSize() : { width:number, height:number } {
+        public getScreenSize() : { width:number, height:number } {
 
             // Get the screen width and height
             const width:number  = window.innerWidth;

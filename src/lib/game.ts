@@ -1,7 +1,8 @@
 import { Player } from "./player.js";
-import { Stage } from "./stage.js";
+import { BoxCircle, BoxRect, NonCollidable, Position, Shape, Stage } from "./stage.js";
 import { Input, KeyboardAndMouseInput, GamepadInput, InputDispatcher, InputType, InputKey } from "./input.js";
 import { Actor } from "./actor.js";
+import { Enemy } from "./enemy.js";
 
 export class Game {
 
@@ -11,6 +12,7 @@ export class Game {
     private eventTarget:EventTarget         = new EventTarget();
 
     public players:Player[] = [];
+    public enemies:Enemy[] = [];
     public x:number = 0;
 
     public constructor() {
@@ -32,10 +34,10 @@ export class Game {
         return this.players[0];
     }
 
-    public start() {
+    public async start() {
 
         // Setup the game
-        this.setup();
+        await this.setup();
 
         // Start animation loop
         this.animate();
@@ -44,7 +46,7 @@ export class Game {
         this.log('Game started');
     }
 
-    private setup() {
+    private async setup() {
 
         // init input control
         this.initKeyboardInput();
@@ -53,9 +55,24 @@ export class Game {
         // create game stage
         this.gameStage = new Stage("01", this);
 
+        // wait for the stage to be ready
+        await this.gameStage.whenReady();
+
+        // wait for the level to be ready
+        await this.gameStage.level.whenReady();
+
+
         // create the player
-        const player1:Player = new Player(this.gameStage);
+        const rndPlayerPos:Position = this.gameStage.randomPosition();
+        const player1:Player = new Player(this.gameStage, rndPlayerPos);
         this.players.push(player1);
+
+        // create the enemy
+        const rndEnemyPos:Position = this.gameStage.randomPosition();
+        const enemy1: Enemy = new Enemy(this.gameStage, rndEnemyPos);
+        this.enemies.push(enemy1);
+        
+
 
         // bind the controls
         this.bindControls(this.dispatcher, player1);

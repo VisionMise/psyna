@@ -78,13 +78,9 @@ export class Actor {
             this.flag_ready = true;
             return;
         }
-        // Load the image
-        this.loadImage().then(() => {
-            this.stage.log(`Actor Loaded: ${this.id}`);
-            this.flag_ready = true;
-        }).catch(() => {
-            this.stage.log(`Failed to load actor image [${this.id}]: ${this.actorImageURL}`);
-        });
+        // Set ready
+        this.flag_ready = true;
+        this.stage.log(`Created ${this.constructor.name}: ${this.id}`);
     }
     //#endregion
     //#region Getters and Setters
@@ -352,6 +348,12 @@ export class Actor {
         // Used for collision detection
         const nextX = this.position.x + this.curVelocity.x;
         const nextY = this.position.y + this.curVelocity.y;
+        // if last position is not set
+        // set it to the current position
+        if (this.lastPosition.x === 0 && this.lastPosition.y === 0) {
+            this.lastPosition.x = this.position.x;
+            this.lastPosition.y = this.position.y;
+        }
         // Collisions
         // Check for collisions on both x and y axis
         let collisionX = this.collidingWithLevel(nextX, this.position.y);
