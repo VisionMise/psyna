@@ -1,5 +1,12 @@
+//#region Imports
+import { Enemy, EnemyType } from "./enemy.js";
+import { Player } from "./player.js";
 import { Shape, Stage } from "./stage.js";
+//#endregion
+//#region Level Class
 export class Level {
+    //#endregion
+    //#region Constructor
     constructor(name, stage) {
         // Images
         this.levelBackgroundURL = null;
@@ -23,34 +30,60 @@ export class Level {
         this.xOffset = 0;
         this.yOffset = 0;
         this.zoomFactor = 1;
+        // Enemies
+        this.maxEnemies = 1;
+        this.maxEnemyLevel = 1;
+        this.enemyTypes = [];
         // Set the level name
         this.mapName = name;
         // Set the stage
         this.stage = stage;
         // Load the level configuration
-        this.loadConfiguration().then(() => {
-            // Calculate the scale
-            this.calcScale();
-            // Generate the map
-            this.map = this.generateMapFromAtlas(this.tileAtlas);
-            // generate the colliders
-            this.colliders = this.generateColliders(this.map, // map
-            this.xOffset, // x offset
-            this.yOffset, // y offset
-            this.tileSize.width * this.scale, // tile width
-            this.tileSize.height * this.scale // tile height
-            );
-            // generate the walkable area
-            this.walkable = this.generateWalkable();
-            // Load the images
-            this.loadImages().then(() => this.flag_ready = true);
-        });
+        this.loadConfiguration().then(async () => await this.setup());
     }
+    async setup() {
+        // setup the tile map
+        await this.setupTileMap();
+        // load the images
+        await this.loadImages();
+        // create the player
+        await this.createPlayer();
+        // create the enemies
+        await this.createEnemies(this.enemyTypes);
+        // set the ready flag
+        this.flag_ready = true;
+    }
+    async setupTileMap() {
+        // Calculate the scale
+        this.calcScale();
+        // Generate the map
+        this.map = this.generateMapFromAtlas(this.tileAtlas);
+        // generate the colliders
+        this.colliders = this.generateColliders(this.map, // map
+        this.xOffset, // x offset
+        this.yOffset, // y offset
+        this.tileSize.width * this.scale, // tile width
+        this.tileSize.height * this.scale // tile height
+        );
+        // generate the walkable area
+        this.walkable = this.generateWalkable();
+    }
+    //#endregion
+    //#region Getters & Setters
     get walls() {
         return this.colliders;
     }
     get floor() {
         return this.walkable;
+    }
+    get actors() {
+        return this.stage.actors;
+    }
+    get player() {
+        return this.actors.filter(actor => actor instanceof Player)[0];
+    }
+    get enemies() {
+        return this.actors.filter(actor => actor instanceof Enemy);
     }
     get walkableArea() {
         // Get the screen dimensions
@@ -70,11 +103,42 @@ export class Level {
         };
         return area;
     }
+    get walkableAreaScaled() {
+        // Unscale the walkable area
+        const area = {
+            x: this.walkableArea.x / this.scale,
+            y: this.walkableArea.y / this.scale,
+            width: this.walkableArea.width / this.scale,
+            height: this.walkableArea.height / this.scale
+        };
+        return area;
+    }
     get drawWallColliders() {
         return this.flag_draw_colliders;
     }
     set drawWallColliders(value) {
         this.flag_draw_colliders = value;
+    }
+    //#endregion
+    //#region Public Methods
+    randomPosition(actorSize = { height: 128, width: 128 }) {
+        // Get the walkable area
+        const walkableArea = this.walkableArea;
+        // scale the actor size
+        actorSize.width /= 2;
+        actorSize.height /= 2;
+        // Get the screen size
+        let area = {
+            x: (walkableArea.x / this.scale) + actorSize.width,
+            y: (walkableArea.y / this.scale) + actorSize.height,
+            width: (walkableArea.width / this.scale) - actorSize.width,
+            height: (walkableArea.height / this.scale) - actorSize.height
+        };
+        // Generate random positions between min and max
+        let x = Math.floor(Math.random() * (area.width - area.x + 1)) + area.x;
+        let y = Math.floor(Math.random() * (area.height - area.y + 1)) + area.y;
+        // Return the position
+        return { x, y };
     }
     update() {
         // if the level is not ready
@@ -83,6 +147,10 @@ export class Level {
         }
         // calculate the scale
         this.calcScale();
+        // update the player
+        this.player.update();
+        // update the enemies
+        this.enemies.forEach(enemy => enemy.update());
     }
     draw(context) {
         // if the level is not ready
@@ -137,6 +205,8 @@ export class Level {
             }, 100);
         });
     }
+    //#endregion
+    //#region Private Methods
     calcScale() {
         // context
         const context = this.stage.context;
@@ -189,6 +259,12 @@ export class Level {
             width: data?.map?.size[0] ?? 32,
             height: data?.map?.size[1] ?? 32
         };
+        // set the max enemies
+        this.maxEnemies = data?.enemies?.max_count ?? 1;
+        // set the max enemy level
+        this.maxEnemyLevel = data?.enemies?.max_level ?? 1;
+        // get all the enemy types
+        this.enemyTypes = (data?.enemies?.types ?? []).map((type) => EnemyType[type]);
     }
     async loadBackground() {
         return new Promise((resolve, reject) => {
@@ -380,4 +456,20 @@ export class Level {
             }
         }
     }
+    async createPlayer() {
+        // create the player
+        new Player(this.stage, this.randomPosition());
+    }
+    async createEnemies(types) {
+        // loop through the max enemies
+        for (let i = 0; i < this.maxEnemies; i++) {
+            // pick a random type
+            const type = types[Math.floor(Math.random() * types.length)];
+            // get a random position
+            let position = this.randomPosition();
+            // create the enemy
+            const enemy = new Enemy(type, this.stage, position);
+        }
+    }
 }
+//#endregion

@@ -1,7 +1,5 @@
-import { Player } from "./player.js";
 import { Stage } from "./stage.js";
 import { KeyboardAndMouseInput, GamepadInput, InputDispatcher, InputType, InputKey } from "./input.js";
-import { Enemy } from "./enemy.js";
 export class Game {
     constructor() {
         this.gameStage = null;
@@ -9,7 +7,6 @@ export class Game {
         this.dispatcher = [];
         this.eventTarget = new EventTarget();
         this.players = [];
-        this.enemies = [];
         this.x = 0;
         // Log the game
         this.log('Game loaded');
@@ -41,16 +38,10 @@ export class Game {
         await this.gameStage.whenReady();
         // wait for the level to be ready
         await this.gameStage.level.whenReady();
-        // create the player
-        const rndPlayerPos = this.gameStage.randomPosition();
-        const player1 = new Player(this.gameStage, rndPlayerPos);
-        this.players.push(player1);
-        // create the enemy
-        const rndEnemyPos = this.gameStage.randomPosition();
-        const enemy1 = new Enemy(this.gameStage, rndEnemyPos);
-        this.enemies.push(enemy1);
+        // set the player
+        this.players.push(this.stage.level.player);
         // bind the controls
-        this.bindControls(this.dispatcher, player1);
+        this.bindControls(this.dispatcher, this.player);
     }
     initKeyboardInput() {
         // input control

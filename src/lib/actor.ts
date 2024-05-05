@@ -152,16 +152,7 @@
                 // Setup the actor
                 this.setup();
 
-                
-                // if the image URL is not set, do not load the image
-                if (!this.actorImageURL) {
-                    this.stage.log(`Actor Loaded: ${this.id}`);
-                    this.flag_ready = true;
-                    return;
-                }
-
-                // Set ready
-                this.flag_ready = true;
+                // log
                 this.stage.log(`Created ${this.constructor.name}: ${this.id}`);
             }
 
@@ -346,7 +337,7 @@
 
         //#region Drawing
 
-            public draw(context:CanvasRenderingContext2D) : void {
+            public draw(context: CanvasRenderingContext2D): void {
                 if (!this.flag_ready) return;
 
                 // Calculate position on the canvas adjusted for scale and offset
@@ -377,8 +368,7 @@
                 context.beginPath();
                 context.arc(x, y, radius, 0, Math.PI * 2, true);
                 context.fill();
-                context.closePath();            
-                
+                context.closePath();
 
                 // Drawing the hurtbox
                 if (this.flag_draw_hurtbox && this.actorHurtbox.shape == Shape.Circle) {
@@ -429,15 +419,20 @@
             }
 
 
-            public update() : void {
 
+            public update() : void {
 
                 // if the actor is not ready, do not draw
                 if (!this.flag_ready) return;
 
                 // move
                 this.move();
+                
+                // Update state based on current velocity
+                this.updateMovementState();
 
+                // Update hitbox and hurtbox positions accordingly
+                this.updateCollision();
             }
 
         //#endregion
@@ -456,81 +451,24 @@
 
         //#region Collision
 
-            private collidingWithLevel(nextX:number, nextY:number) : boolean {
-                
-                // walls
-                const walls = this.stage.level.walls;
+        protected inWalkableArea(xPos:boolean = true, yPos:boolean = true): {x:boolean, y:boolean} {
+            // Get the walkable area
+            const area = this.stage.level.walkableArea;
 
-                // actor box
-                // Calculate the actual center position on the canvas
-                let posX = nextX * this.stage.level.scale + this.stage.level.xOffset;
-                let posY = nextY * this.stage.level.scale + this.stage.level.yOffset;
+            // scaled position
+            let x = this.position.x * this.stage.level.scale + this.stage.level.xOffset;
+            let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
 
-                // size
-                let sizeX = (this.size.width * this.stage.level.scale) / 2;
-                let sizeY = (this.size.height * this.stage.level.scale) / 2;
+            // allow for actor size
+            x = (xPos) ? x + this.size.width * 0.5 : x - this.size.width * 0.5;
+            y = (yPos) ? y + this.size.height * 0.5: y - this.size.height * 0.5;
 
-                // check for collision
-                for (let wall of walls) {
-
-                    // wall box
-                    let { x, y, width, height } = wall.box as BoxRect;
-
-                    // check for collision
-                    if (posX + sizeX > x && posX - sizeX < x + width && posY + sizeY > y && posY - sizeY < y + height) {
-                        return true;
-                    }
-                    
-                }
-
-                return false;
-            }
-
-            private checkWallCollisions() : boolean {
-                
-                // Predict the next position based on current velocity
-                // Used for collision detection
-                const nextX = this.position.x + this.curVelocity.x;
-                const nextY = this.position.y + this.curVelocity.y;
-
-                // if last position is not set
-                // set it to the current position
-                if (this.lastPosition.x === 0 && this.lastPosition.y === 0) {
-                    this.lastPosition.x = this.position.x;
-                    this.lastPosition.y = this.position.y;
-                }
-
-                // Collisions
-                // Check for collisions on both x and y axis
-                let collisionX = this.collidingWithLevel(nextX, this.position.y);
-                let collisionY = this.collidingWithLevel(this.position.x, nextY);
-
-                // if there is a collision on x axis
-                // stop movement on x axis
-                if (collisionX) {
-                    this.curVelocity.x  = 0;
-                    this.acceleration.x = 0;
-                    this.position.x     = this.lastPosition.x;
-                } else {
-                    this.lastPosition.x = this.position.x;
-                    this.position.x     = nextX;
-                }
-
-                // if there is a collision on y axis
-                // stop movement on y axis
-                if (collisionY) {
-                    this.curVelocity.y  = 0
-                    this.acceleration.y = 0;
-                    this.position.y     = this.lastPosition.y;
-                } else {
-                    this.lastPosition.y = this.position.y;
-                    this.position.y     = nextY;
-                }
-
-                // if there is a collision on x or y axis
-                // return true
-                return collisionX || collisionY;
-            }
+            // check if the actor is in the walkable area
+            const xOkay = x >= area.x && x <= area.x + area.width;
+            const yOkay = y >= area.y && y <= area.y + area.height;            
+            
+            return {x: xOkay, y: yOkay};
+        }
 
         //#endregion
 
@@ -538,24 +476,51 @@
 
         //#region Movement
 
-            private move(): void {
+            protected move(): void {
 
                 // Do not move if not ready, dead, or not in the stage
                 if (!this.flag_ready || !this.flag_can_move || this.state === State.Dead || !this.stage.actors.includes(this)) {
                     return;
                 }
+                
+                // if last position is not set
+                // set it to the current position
+                if (this.lastPosition.x === 0 && this.lastPosition.y === 0) {
+                    this.lastPosition.x = this.position.x;
+                    this.lastPosition.y = this.position.y;
+                }
 
                 // Calculate velocity based on acceleration
-                this.calculateMovement();
+                this.calculateVelocity();
 
-                // Check for wall collisions
-                this.checkWallCollisions();
+                // positive movement
+                let xPos:boolean = (this.curVelocity.x > 0);
+                let yPos:boolean = (this.curVelocity.y > 0);
 
-                // Update state based on current velocity
-                this.updateMovementState();
+                // check if the actor is in the walkable area
+                let inArea:{x:boolean, y:boolean} = this.inWalkableArea(xPos, yPos);
 
-                // Update hitbox and hurtbox positions accordingly
-                this.updateCollision();
+                // if the actor is not in the walkable area
+                // stop movement
+                if (!inArea.x) {
+                    this.curVelocity.x = 0;
+                    this.position.x = this.lastPosition.x;
+                } else {
+                    this.lastPosition.x = this.position.x;
+                    this.position.x += this.curVelocity.x;
+                }
+
+                // if the actor is not in the walkable area
+                // stop movement
+                if (!inArea.y) {
+                    this.curVelocity.y = 0;
+                    this.position.y = this.lastPosition.y;
+                } else {
+                    this.lastPosition.y = this.position.y;
+                    this.position.y += this.curVelocity.y;
+                }
+
+
             }
 
             private applyDampingAndFriction(): void {
@@ -573,18 +538,10 @@
 
             private updateMovementState(): void {
 
-                if (this.state == State.Hurt || this.state == State.Dead) return;
-
-                // make sure the position is changing
-                if (this.position.x !== this.lastPosition.x || this.position.y !== this.lastPosition.y) {
-
-                    // if the actor is not walking
-                    // set the state to walking
-                    this.delayStateChange(State.Walking, 90);
-
-                    return;
+                if (this.curVelocity.x !== 0 || this.curVelocity.y !== 0) {
+                    if (this.state !== State.Walking) this.delayStateChange(State.Walking, 2);
                 }
-                
+
                 if (this.state !== State.Idle) this.delayStateChange(State.Idle, 2);
             }
 
@@ -597,7 +554,11 @@
                 }
             }
 
-            private calculateMovement() : void {
+            private calculateVelocity() : void {
+
+                // if the actor is not ready
+                // do not move
+                if (!this.flag_ready) return;
                 
                 // Apply acceleration to velocity
                 this.curVelocity.x += this.acceleration.x;
@@ -619,7 +580,9 @@
                 this.applyDampingAndFriction();
 
                 // Ensure stopping movement at very low velocity
-                this.clampVelocity();                
+                this.clampVelocity();
+
+
             }
 
             private updateCollision() : void {

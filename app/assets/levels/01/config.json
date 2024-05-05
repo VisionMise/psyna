@@ -18,5 +18,10 @@
             "left":             [ 6, 12, 18, 24]
         },
         "floor":                [8, 9, 10, 14, 15, 16, 20, 21, 22, 26, 28]
+    },
+    "enemies": {
+        "max_count": 100,
+        "max_level": 1,
+        "types": ["Stalker"]
     }
 }

@@ -1,7 +1,7 @@
+import { Actor } from "./actor.js";
 import { Player } from "./player.js";
 import { BoxCircle, BoxRect, NonCollidable, Position, Shape, Stage } from "./stage.js";
 import { Input, KeyboardAndMouseInput, GamepadInput, InputDispatcher, InputType, InputKey } from "./input.js";
-import { Actor } from "./actor.js";
 import { Enemy } from "./enemy.js";
 
 export class Game {
@@ -10,9 +10,8 @@ export class Game {
     private controller:Input[]              = [];
     private dispatcher:InputDispatcher[]    = [];
     private eventTarget:EventTarget         = new EventTarget();
+    private players:Player[]                = [];
 
-    public players:Player[] = [];
-    public enemies:Enemy[] = [];
     public x:number = 0;
 
     public constructor() {
@@ -61,22 +60,11 @@ export class Game {
         // wait for the level to be ready
         await this.gameStage.level.whenReady();
 
-
-        // create the player
-        const rndPlayerPos:Position = this.gameStage.randomPosition();
-        const player1:Player = new Player(this.gameStage, rndPlayerPos);
-        this.players.push(player1);
-
-        // create the enemy
-        const rndEnemyPos:Position = this.gameStage.randomPosition();
-        const enemy1: Enemy = new Enemy(this.gameStage, rndEnemyPos);
-        this.enemies.push(enemy1);
-        
-
+        // set the player
+        this.players.push(this.stage.level.player);
 
         // bind the controls
-        this.bindControls(this.dispatcher, player1);
-
+        this.bindControls(this.dispatcher, this.player);
     }
 
     private initKeyboardInput() {

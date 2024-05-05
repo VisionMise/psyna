@@ -37,6 +37,14 @@ export class Stage {
         this.currentLevel = new Level(this.stageName, this);
         // Set the stage as ready
         this.currentLevel.whenReady().then(() => this.flag_ready = true);
+        //debug
+        this.stageCanvas.addEventListener('click', (e) => {
+            //log mouse position
+            const rect = this.stageCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            console.log('x', x, 'y', y);
+        });
     }
     //#endregion
     //#region Properties
@@ -91,23 +99,6 @@ export class Stage {
             }, 100);
         });
     }
-    randomPosition(actorSize = { height: 128, width: 128 }) {
-        const walkableArea = this.currentLevel.walkableArea;
-        const screenSize = this.getScreenSize();
-        // Calculate scale factors
-        const scaleX = screenSize.width / walkableArea.width;
-        const scaleY = screenSize.height / walkableArea.height;
-        // Calculate maximum valid positions
-        let maxX = (walkableArea.x + walkableArea.width - actorSize.width) * scaleX;
-        let maxY = (walkableArea.y + walkableArea.height - actorSize.height) * scaleY;
-        // Calculate minimum valid positions
-        let minX = walkableArea.x * scaleX;
-        let minY = walkableArea.y * scaleY;
-        // Generate random positions within bounds
-        let x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
-        let y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
-        return { x, y };
-    }
     //#endregion
     //#region Private Methods
     bindEvents() {
@@ -150,8 +141,6 @@ export class Stage {
     update() {
         // Update the current level
         this.currentLevel.update();
-        // Update the actors
-        this.actorList.forEach(actor => actor.update());
         // if subpixel rendering is enabled
         if (this.flag_subpixelRendering) {
             // Set a subpixel blur
@@ -174,7 +163,7 @@ export class Stage {
         this.stageCanvas.height = aspectRatio.height;
     }
     //#endregion
-    //#region Rendering
+    //#region Drawing
     filter(filter, value) {
         // if the filter is none
         if (filter === Filter.None) {
