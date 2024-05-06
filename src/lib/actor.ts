@@ -170,6 +170,10 @@
                 this.currentState = newState;
             }
 
+            public get radius() : number {
+                return this.size.width / 2;
+            }
+
             public get hurtbox() : Hurtbox {
                 return this.actorHurtbox;
             }
@@ -418,8 +422,6 @@
                 }
             }
 
-
-
             public update() : void {
 
                 // if the actor is not ready, do not draw
@@ -451,24 +453,91 @@
 
         //#region Collision
 
-        protected inWalkableArea(xPos:boolean = true, yPos:boolean = true): {x:boolean, y:boolean} {
-            // Get the walkable area
-            const area = this.stage.level.walkableArea;
+            protected inWalkableArea(xPos:boolean = true, yPos:boolean = true): {x:boolean, y:boolean} {
+                // Get the walkable area
+                const area = this.stage.level.walkableArea;
 
-            // scaled position
-            let x = this.position.x * this.stage.level.scale + this.stage.level.xOffset;
-            let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
+                // scaled position
+                let x = this.position.x * this.stage.level.scale + this.stage.level.xOffset;
+                let y = this.position.y * this.stage.level.scale + this.stage.level.yOffset;
 
-            // allow for actor size
-            x = (xPos) ? x + this.size.width * 0.5 : x - this.size.width * 0.5;
-            y = (yPos) ? y + this.size.height * 0.5: y - this.size.height * 0.5;
+                // allow for actor size
+                x = (xPos) ? x + this.size.width * 0.5 : x - this.size.width * 0.5;
+                y = (yPos) ? y + this.size.height * 0.5: y - this.size.height * 0.5;
 
-            // check if the actor is in the walkable area
-            const xOkay = x >= area.x && x <= area.x + area.width;
-            const yOkay = y >= area.y && y <= area.y + area.height;            
+                // check if the actor is in the walkable area
+                const xOkay = x >= area.x && x <= area.x + area.width;
+                const yOkay = y >= area.y && y <= area.y + area.height;            
+                
+                return {x: xOkay, y: yOkay};
+            }
+
+            private resolveCollision(other: Actor): void {
+                // Get the overlap on both the X and Y axes
+                const overlapX = Math.min(this.position.x + this.size.width, other.position.x + other.size.width) -
+                                Math.max(this.position.x, other.position.x);
+                const overlapY = Math.min(this.position.y + this.size.height, other.position.y + other.size.height) -
+                                Math.max(this.position.y, other.position.y);
+
+                // Resolve collision on the axis with the smallest overlap
+                if (overlapX < overlapY) {
+                    if (this.position.x < other.position.x) {
+                        this.position.x -= overlapX / 2;
+                        other.position.x += overlapX / 2;
+                    } else {
+                        this.position.x += overlapX / 2;
+                        other.position.x -= overlapX / 2;
+                    }
+                } else {
+                    if (this.position.y < other.position.y) {
+                        this.position.y -= overlapY / 2;
+                        other.position.y += overlapY / 2;
+                    } else {
+                        this.position.y += overlapY / 2;
+                        other.position.y -= overlapY / 2;
+                    }
+                }
+
+                // Slightly nudge in the previous direction
+                const nudgedX = this.position.x + this.curVelocity.x;
+                const nudgedY = this.position.y + this.curVelocity.y;
+                const otherNudgedX = other.position.x + other.curVelocity.x;
+                const otherNudgedY = other.position.y + other.curVelocity.y;
+
+                // Calculate the new overlap
+                const newOverlapX = Math.min(nudgedX + this.size.width, otherNudgedX + other.size.width) -
+                                    Math.max(nudgedX, otherNudgedX);
+
+                const newOverlapY = Math.min(nudgedY + this.size.height, otherNudgedY + other.size.height) -
+                                    Math.max(nudgedY, otherNudgedY);
+
+                // If nudging in the previous direction still overlaps, then stop
+                if (newOverlapX > 0 && newOverlapY > 0) {
+                    this.curVelocity = { x: 0, y: 0 };
+                    other.curVelocity = { x: 0, y: 0 };
+                    return;
+                }
+
+                // Otherwise, nudge in the previous direction
+                this.position.x += this.curVelocity.x;
+                this.position.y += this.curVelocity.y;
+                other.position.x += other.curVelocity.x;
+                other.position.y += other.curVelocity.y;
+            }
             
-            return {x: xOkay, y: yOkay};
-        }
+            private isOverlapping(other: Actor): boolean {
+                return !(this.position.x + this.size.width <= other.position.x ||
+                        this.position.y + this.size.height <= other.position.y ||
+                        this.position.x >= other.position.x + other.size.width ||
+                        this.position.y >= other.position.y + other.size.height);
+            }
+
+            public checkAndResolveCollision(other: Actor): void {
+                if (this.isOverlapping(other)) {
+                    this.resolveCollision(other);
+                }
+            }
+
 
         //#endregion
 

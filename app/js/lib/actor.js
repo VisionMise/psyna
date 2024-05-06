@@ -83,6 +83,9 @@ export class Actor {
     set state(newState) {
         this.currentState = newState;
     }
+    get radius() {
+        return this.size.width / 2;
+    }
     get hurtbox() {
         return this.actorHurtbox;
     }
@@ -332,6 +335,66 @@ export class Actor {
         const xOkay = x >= area.x && x <= area.x + area.width;
         const yOkay = y >= area.y && y <= area.y + area.height;
         return { x: xOkay, y: yOkay };
+    }
+    resolveCollision(other) {
+        // Get the overlap on both the X and Y axes
+        const overlapX = Math.min(this.position.x + this.size.width, other.position.x + other.size.width) -
+            Math.max(this.position.x, other.position.x);
+        const overlapY = Math.min(this.position.y + this.size.height, other.position.y + other.size.height) -
+            Math.max(this.position.y, other.position.y);
+        // Resolve collision on the axis with the smallest overlap
+        if (overlapX < overlapY) {
+            if (this.position.x < other.position.x) {
+                this.position.x -= overlapX / 2;
+                other.position.x += overlapX / 2;
+            }
+            else {
+                this.position.x += overlapX / 2;
+                other.position.x -= overlapX / 2;
+            }
+        }
+        else {
+            if (this.position.y < other.position.y) {
+                this.position.y -= overlapY / 2;
+                other.position.y += overlapY / 2;
+            }
+            else {
+                this.position.y += overlapY / 2;
+                other.position.y -= overlapY / 2;
+            }
+        }
+        // Slightly nudge in the previous direction
+        const nudgedX = this.position.x + this.curVelocity.x;
+        const nudgedY = this.position.y + this.curVelocity.y;
+        const otherNudgedX = other.position.x + other.curVelocity.x;
+        const otherNudgedY = other.position.y + other.curVelocity.y;
+        // Calculate the new overlap
+        const newOverlapX = Math.min(nudgedX + this.size.width, otherNudgedX + other.size.width) -
+            Math.max(nudgedX, otherNudgedX);
+        const newOverlapY = Math.min(nudgedY + this.size.height, otherNudgedY + other.size.height) -
+            Math.max(nudgedY, otherNudgedY);
+        // If nudging in the previous direction still overlaps, then stop
+        if (newOverlapX > 0 && newOverlapY > 0) {
+            this.curVelocity = { x: 0, y: 0 };
+            other.curVelocity = { x: 0, y: 0 };
+            return;
+        }
+        // Otherwise, nudge in the previous direction
+        this.position.x += this.curVelocity.x;
+        this.position.y += this.curVelocity.y;
+        other.position.x += other.curVelocity.x;
+        other.position.y += other.curVelocity.y;
+    }
+    isOverlapping(other) {
+        return !(this.position.x + this.size.width <= other.position.x ||
+            this.position.y + this.size.height <= other.position.y ||
+            this.position.x >= other.position.x + other.size.width ||
+            this.position.y >= other.position.y + other.size.height);
+    }
+    checkAndResolveCollision(other) {
+        if (this.isOverlapping(other)) {
+            this.resolveCollision(other);
+        }
     }
     //#endregion
     //#region Movement
