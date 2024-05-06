@@ -254,7 +254,7 @@ export class Enemy extends Actor {
 
                 if (distance < combinedRadius) {
                     // If they overlap, nudge them apart
-                    const overlap = combinedRadius - distance;
+                    const overlap = combinedRadius - distance * 2;
                     const angle = Math.atan2(dy, dx);
 
                     this.position.x -= Math.cos(angle) * overlap;
@@ -262,11 +262,11 @@ export class Enemy extends Actor {
                     other.position.x += Math.cos(angle) * overlap;
                     other.position.y += Math.sin(angle) * overlap;
 
-                    // // Optional: update velocities to prevent sticking
-                    // this.velocity.x += -Math.cos(angle);
-                    // this.velocity.y += -Math.sin(angle);
-                    // other.velocity.x += Math.cos(angle);
-                    // other.velocity.y += Math.sin(angle);
+                    // Optional: update velocities to prevent sticking
+                    this.velocity.x += -Math.cos(angle);
+                    this.velocity.y += -Math.sin(angle);
+                    other.velocity.x += Math.cos(angle);
+                    other.velocity.y += Math.sin(angle);
                 }
             }
         }
@@ -408,6 +408,87 @@ export class Enemy extends Actor {
     }
 
     protected avoid() {
+
+        // Get player and enemy center
+        const player = this.stage.level.player;
+        const playerCenterX = player.position.x + player.size.width / 2;
+        const playerCenterY = player.position.y + player.size.height / 2;
+        const enemyCenterX = this.position.x + this.size.width / 2;
+        const enemyCenterY = this.position.y + this.size.height / 2;
+
+        // Calculate the angle
+        const angle = Math.atan2(playerCenterY - enemyCenterY, playerCenterX - enemyCenterX);
+
+        // Calculate the distance
+        const distance = Math.sqrt((playerCenterX - enemyCenterX) ** 2 + (playerCenterY - enemyCenterY) ** 2);
+
+        // Calculate the speed
+        let speed = Math.max(Math.random(), Math.min(1, distance / 100)); // Keep speed between 0.5 and 1
+
+        // Increase the speed a random amount
+        speed += Math.random() * 0.5;
+
+        // Move based on the distance
+        if (distance < 250) {
+            // Slow down as approaching
+            this.velocity.x = -Math.cos(angle) * speed / 2;
+            this.velocity.y = -Math.sin(angle) * speed / 2;
+        } else {
+            // Move at normal speed
+            this.velocity.x = -Math.cos(angle) * speed;
+            this.velocity.y = -Math.sin(angle) * speed;
+        }
+
+        // Apply random velocity changes if near other enemies
+        for (let other of this.stage.level.enemies) {
+            if (other === this) continue;
+
+            // Circular collision detection
+            const dx = other.position.x - this.position.x;
+            const dy = other.position.y - this.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const combinedRadius = this.radius + other.radius;
+
+            if (distance < combinedRadius) {
+                // If they overlap, nudge them apart
+                const overlap = combinedRadius - distance;
+                const angle = Math.atan2(dy, dx);
+
+                this.velocity.x += Math.cos(angle) * overlap;
+                this.velocity.y += Math.sin(angle) * overlap;
+                other.velocity.x += -Math.cos(angle) * overlap;
+                other.velocity.y += -Math.sin(angle) * overlap;
+            }
+
+            // Check for collision with the player
+            this.checkAndResolveCollision(player);
+
+            // Positive movement
+            let xPos = this.velocity.x > 0;
+            let yPos = this.velocity.y > 0;
+
+            // Check if the actor is in the walkable area
+            let inArea = this.inWalkableArea(xPos, yPos);
+            
+            // If the actor is not in the walkable area, stop movement
+            if (!inArea.x) {
+                this.curVelocity.x = 0;
+                this.position.x = this.lastPosition.x;
+            } else {
+                this.lastPosition.x = this.position.x;
+                this.position.x += this.curVelocity.x;
+            }
+
+            if (!inArea.y) {
+                this.curVelocity.y = 0;
+                this.position.y = this.lastPosition.y;
+            } else {
+                this.lastPosition.y = this.position.y;
+                this.position.y += this.curVelocity.y;
+            }
+
+        }
+
     }
 
 
