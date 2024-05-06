@@ -34,16 +34,10 @@ async function loadLibrary(name:string) : Promise<any> {
 async function main() {
 
     // Load the game library
-    const gameLibrary:any = await loadLibrary('game');
+    const gameLibrary:any = await loadLibrary('engine');
 
     // Create a new game
-    const game:any = new gameLibrary.Game();
-
-    // Start the game
-    game.start();
-
-    // Add the game to the window object
-    (window as any).game = game;
+    (window as any).psyna = new gameLibrary.Engine();
 }
 
 

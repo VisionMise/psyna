@@ -27,13 +27,9 @@ async function loadLibrary(name) {
  */
 async function main() {
     // Load the game library
-    const gameLibrary = await loadLibrary('game');
+    const gameLibrary = await loadLibrary('engine');
     // Create a new game
-    const game = new gameLibrary.Game();
-    // Start the game
-    game.start();
-    // Add the game to the window object
-    window.game = game;
+    window.psyna = new gameLibrary.Engine();
 }
 // Run the main function
 main();
