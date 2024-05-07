@@ -24,7 +24,7 @@ import { Viewport } from "../output/viewport";
             // Set up the camera
             this.setup();
         }
-
+        
         public get position() : Position {
             return this.currentPosition;
         }
