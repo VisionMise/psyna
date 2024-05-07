@@ -66,8 +66,8 @@
 
     export class Engine {
 
+        public viewport:Viewport;
         private world:World;
-        private viewport:Viewport;
         private worldClock:number;
 
         public readonly Events = new EventTarget();
@@ -99,7 +99,7 @@
             this.viewport.camera = new Camera(this.viewport);
 
             // Create the world
-            this.world = new World();
+            this.world = new World(this);
 
             // Create a clock event
             this.startClock();

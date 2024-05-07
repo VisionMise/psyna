@@ -29,7 +29,7 @@ export class Viewport {
             height: window.innerHeight
         };
     }
-    get viewportSize() {
+    get size() {
         return {
             width: this.currentViewport.clientWidth,
             height: this.currentViewport.clientHeight
@@ -39,7 +39,7 @@ export class Viewport {
         // aspect ratio of 16:9
         const aspectRatio = { width: 12, height: 9 };
         // get the scaled size
-        const scaledSize = this.scaleToAspect(this.viewportSize, aspectRatio);
+        const scaledSize = this.scaleToAspect(this.size, aspectRatio);
         // return the scaled size
         return scaledSize;
     }
@@ -47,7 +47,7 @@ export class Viewport {
         // get the scaled size
         const scaledSize = this.scaledSize;
         // get the scale factor
-        const scaleFactor = scaledSize.width / this.viewportSize.width;
+        const scaleFactor = scaledSize.width / this.size.width;
         // return the scale factor
         return scaleFactor;
     }

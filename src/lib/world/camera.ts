@@ -1,7 +1,7 @@
 //#region Imports
 
     import { Position } from "../engine";
-import { Viewport } from "../output/viewport";
+    import { Viewport } from "../output/viewport";
     import { Stage } from "./stage";
 
 //#endregion

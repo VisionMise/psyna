@@ -1,7 +1,7 @@
 //#region Imports
 
     import { Size } from "../engine";
-import { Camera } from "../world/camera";
+    import { Camera } from "../world/camera";
     import { World } from "../world/world";
 
 //#endregion
@@ -54,7 +54,7 @@ import { Camera } from "../world/camera";
             };
         }
 
-        public get viewportSize() : Size {
+        public get size() : Size {
             return {
                 width:this.currentViewport.clientWidth,
                 height:this.currentViewport.clientHeight
@@ -67,7 +67,7 @@ import { Camera } from "../world/camera";
             const aspectRatio:Size = { width:12, height:9 };
 
             // get the scaled size
-            const scaledSize:Size = this.scaleToAspect(this.viewportSize, aspectRatio);
+            const scaledSize:Size = this.scaleToAspect(this.size, aspectRatio);
 
             // return the scaled size
             return scaledSize;
@@ -79,7 +79,7 @@ import { Camera } from "../world/camera";
             const scaledSize:Size = this.scaledSize;
 
             // get the scale factor
-            const scaleFactor:number = scaledSize.width / this.viewportSize.width;
+            const scaleFactor:number = scaledSize.width / this.size.width;
 
             // return the scale factor
             return scaleFactor;
