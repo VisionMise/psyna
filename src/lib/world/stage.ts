@@ -1,3 +1,48 @@
+//#region Enums
+
+import { Position, Size } from "../engine";
+
+    export enum LayerType {
+        TileLayer   = 'tilelayer',
+        Object      = 'objectgroup',
+        Image       = 'imagelayer'
+    }
+
+    export enum ObjectShape {
+        Polygon     = 'polygon',
+        Rectangle   = 'rectangle',
+        Circle      = 'circle'
+    }
+
+    export interface StageObject {
+        id:         number;
+        name:       string;
+        type:       string;
+        size:       Size;
+        position:   Position;
+        rotation:   number;
+        shape:      ObjectShape;
+        polygon?:   Position[];
+    }
+
+    export interface StageMap {
+        dimensions: Size;
+        tilesize:   Size;
+    }
+
+    export interface StageLayer {
+        id:         number;
+        name:       string;
+        type:       LayerType;
+        position:   Position;
+        data?:      any;
+        objects?:   any;
+        opacity?:   number;
+        visible?:   boolean;
+    }
+
+//#endregion
+
 //#region Stage Class
 
     export class Stage {
@@ -18,19 +63,21 @@
             return this.stageName;
         }
 
+        public get configuration() : any {
+            return this.stageConfiguration;
+        }
+
         private async setup() {
 
             // load the stage configuration
             this.stageConfiguration = await this.loadConfiguration();
 
-            // load the stage assets
-            await this.loadStageAssets();
         }
 
         private async loadConfiguration() {
 
             // path of configuration file
-            const path:string = `./assets/world/${this.stageName}/config.json`;
+            const path:string = `./assets/world/${this.stageName}/${this.stageName}.json`;
 
             // load the configuration file
             const response = await fetch(path);
@@ -45,20 +92,28 @@
             return data;
         }
 
-        private async loadStageAssets() {
+        private async loadTilesets() {
 
-            // path of tileset
-            const path:string = `./assets/world/${this.stageName}/tilesheet.png`;
+        }
 
-            // load the tileset
-            const image = new Image();
+        private parseTilemap() {
 
-            // load the image
-            image.src = path;
+            // parse Tiled export file
+            // json format
+            
+        }
 
-            // wait for the image to load
-            await new Promise<void>(resolve => image.onload = () => resolve());
+        private loadLayer(layer:any) {
 
+            // load the layer
+            switch(layer.type) {
+                case LayerType.TileLayer:
+                    break;
+                case LayerType.Object:
+                    break;
+                case LayerType.Image:
+                    break;
+            }
         }
 
     }
