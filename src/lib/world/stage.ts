@@ -1,6 +1,6 @@
 //#region Enums
 
-import { Position, Size } from "../engine";
+import { BoxRect, Position, Size } from "../engine";
 import { World } from "./world";
 
     export enum LayerType {
@@ -37,6 +37,9 @@ import { World } from "./world";
         name:       string;
         type:       LayerType;
         position:   Position;
+        image?:     any;
+        width?:     number;
+        height?:    number;
         data?:      any;
         objects?:   any;
         opacity?:   number;
@@ -125,44 +128,214 @@ import { World } from "./world";
         }
 
         private update() {
+
+            // render the stage
+            this.render();
+            
         }
 
         private render() {
 
+            // get viewable area from world camera
+            const viewableArea = this.world.viewableArea;
+
             // render each layer
-            this.stageMap.layers.forEach(layer => this.renderLayer(layer));
+            this.stageMap.layers.forEach(layer => this.renderLayer(layer, viewableArea));
 
 
         }
 
-        private renderLayer(layer:StageLayer) {
+        private renderLayer(layer:StageLayer, viewableArea:BoxRect) {
 
             switch (layer.type) {
                 case LayerType.TileLayer:
-                    this.renderTileLayer(layer);
+                    this.renderTileLayer(layer, viewableArea);
                     break;
                 case LayerType.Object:
-                    this.renderObjectLayer(layer);
+                    this.renderObjectLayer(layer, viewableArea);
                     break;
                 case LayerType.Image:
-                    this.renderImageLayer(layer);
+                    this.renderImageLayer(layer, viewableArea);
                     break;
             }
 
         }
 
-        private renderTileLayer(layer:StageLayer) {
+        private renderTileLayer(layer:StageLayer, viewableArea:BoxRect) {
+
+            // check if the layer is visible
+            if (!layer.visible) return;
+
+            // get the layer data
+            const data:number[] = layer.data;
+
+            // get the tile size
+            const tileSize:Size = this.stageMap.tilesize;
+
+            // viewable area
+            const viewable:BoxRect = viewableArea;
+
+            // get the number of columns
+            const cols:number = this.stageMap.dimensions.width / tileSize.width;
+
+            // get the number of rows
+            const rows:number = this.stageMap.dimensions.height / tileSize.height;
+
+            // get the starting row
+            const startRow:number = Math.floor(viewable.y1 / tileSize.height);
+
+            // get the starting column
+            const startCol:number = Math.floor(viewable.x1 / tileSize.width);
+
+            // get the ending row
+            const endRow:number = Math.floor(viewable.y2 / tileSize.height);
+
+            // get the ending column
+            const endCol:number = Math.floor(viewable.x2 / tileSize.width);
+
+            // loop through the rows
+            for (let row = startRow; row < endRow; row++) {
+
+                // loop through the columns
+                for (let col = startCol; col < endCol; col++) {
+
+                    // get the tile index
+                    const index:number = row * cols + col;
+
+                    // get the tile id
+                    const tileId:number = data[index];
+
+                    // get the tile position
+                    const position:Position = {
+                        x: col * tileSize.width,
+                        y: row * tileSize.height
+                    };
+
+                    // render the tile
+                    this.renderTile(tileId, position, tileSize);
+
+                }
+
+            }
+        }
+
+        private renderObjectLayer(layer:StageLayer, viewableArea:BoxRect)  {
+
+            // check if the layer is visible
+            if (!layer.visible) return;
+
+            // get the objects
+            const objects:StageObject[] = layer.objects;
+
+            // loop through the objects
+            objects.forEach(object => this.renderObject(object));
+
+        }
+
+        private renderImageLayer(layer:StageLayer, viewableArea:BoxRect) {
+
+            // check if the layer is visible
+            if (!layer.visible) return;
+
+            // get the image
+            const image = new Image();
+            image.src = `./assets/world/${this.stageName}/${layer.image}`;
+
+            // get the image size
+            const size:Size = {
+                width: layer.width,
+                height: layer.height
+            };
+
+            // get the position
+            const position:Position = {
+                x: layer.position.x,
+                y: layer.position.y
+            };
+
+            // render the image
+            this.renderImage(image, position, size);
+
+        }
+
+        private renderTile(tileId:number, position:Position, size:Size) {
             
+            // get the tileset
+            const tileset = this.stageConfiguration.tilesets[0];
+
+            // get the tileset image
+            const image = new Image();
+            image.src = `./assets/world/${this.stageName}/${tileset.image}`;
+
+            // get the tileset size
+            const tilesetSize:Size = {
+                width: tileset.tilewidth,
+                height: tileset.tileheight
+            };
+
+            // get the number of columns
+            const cols:number = tileset.imagewidth / tilesetSize.width;
+
+            // get the tile position
+            const tilePosition:Position = {
+                x: (tileId % cols) * tilesetSize.width,
+                y: Math.floor(tileId / cols) * tilesetSize.height
+            };
+
+            // render the tile
+            this.renderImage(image, position, size, tilePosition, tilesetSize);            
         }
 
-        private renderObjectLayer(layer:StageLayer) {
-        }
+        private renderImage(image: HTMLImageElement, position: Position, size: Size, tilePosition?: Position, tilesetSize?: Size) {
 
-        private renderImageLayer(layer:StageLayer) {
+            // get the canvas context
+            const context = this.world.viewport.context;
+
+            // draw the image
+            context.drawImage(image, tilePosition.x, tilePosition.y, tilesetSize.width, tilesetSize.height, position.x, position.y, size.width, size.height);
+
         }
 
         private renderObject(object:StageObject) {
+
+            // create a polygon for the object
+            const polygon:Position[] = object.polygon.map(point => {
+                return {
+                    x: object.position.x + point.x,
+                    y: object.position.y + point.y
+                };
+            });
+
+            // render the object
+            this.renderPolygon(polygon);
         }
+
+        private renderPolygon(polygon:Position[]) {
+
+            // get the canvas context
+            const context = this.world.viewport.context;
+
+            // start the path
+            context.beginPath();
+
+            // move to the first point
+            context.moveTo(polygon[0].x, polygon[0].y);
+
+            // loop through the points
+            for (let i = 1; i < polygon.length; i++) {
+                context.lineTo(polygon[i].x, polygon[i].y);
+            }
+
+            // close the path
+            context.closePath();
+
+            // stroke the path
+            context.stroke();
+
+        }
+
+
+
     }
 
 //#endregion

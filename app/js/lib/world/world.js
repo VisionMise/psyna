@@ -1,10 +1,13 @@
 //#region Imports
-import { Stage } from "./stage";
+import { Stage } from "./stage.js";
 //#endregion
 //#region World Class
 export class World {
     constructor(gameEngine) {
+        // Set the game engine
         this.gameEngine = gameEngine;
+        // Log the setup
+        this.gameEngine.console('World initialized');
     }
     get stage() {
         return this.currentStage;
@@ -17,9 +20,9 @@ export class World {
     }
     get viewableArea() {
         // get the camera position
-        const cameraPos = this.gameEngine.viewport.camera.position;
+        const cameraPos = this.viewport.camera.position;
         // get the viewport size
-        const viewportSize = this.gameEngine.viewport.size;
+        const viewportSize = this.viewport.size;
         // calculate the viewable area
         // based on the camera position and the viewport size
         // pos is center of viewport

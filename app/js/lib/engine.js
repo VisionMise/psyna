@@ -19,7 +19,7 @@ export class Engine {
     constructor() {
         this.Events = new EventTarget();
         // Log the setup
-        this.console('Game engine started');
+        this.console('Engine started');
         // Setup the world
         // then start the game
         this.setup().then(() => this.run());

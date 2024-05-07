@@ -75,7 +75,7 @@
         public constructor() {
 
             // Log the setup
-            this.console('Game engine started');
+            this.console('Engine started');
 
             // Setup the world
             // then start the game

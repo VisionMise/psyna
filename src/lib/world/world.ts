@@ -1,8 +1,8 @@
 //#region Imports
 
-    import { BoxRect, Engine, Position, Size } from "../engine";
-    import { Viewport } from "../output/viewport";
-    import { Stage } from "./stage";
+    import { BoxRect, Engine, Position, Size } from "../engine.js";
+    import { Viewport } from "../output/viewport.js";
+    import { Stage } from "./stage.js";
 
 //#endregion
 
@@ -17,7 +17,12 @@
         private gameEngine:Engine;
 
         public constructor(gameEngine:Engine) {
+
+            // Set the game engine
             this.gameEngine = gameEngine;
+
+            // Log the setup
+            this.gameEngine.console('World initialized');
         }
 
         public get stage() : Stage {
@@ -35,10 +40,10 @@
         public get viewableArea() : BoxRect {
 
             // get the camera position
-            const cameraPos:Position = this.gameEngine.viewport.camera.position
+            const cameraPos:Position = this.viewport.camera.position
 
             // get the viewport size
-            const viewportSize:Size = this.gameEngine.viewport.size;
+            const viewportSize:Size = this.viewport.size;
 
             // calculate the viewable area
             // based on the camera position and the viewport size
