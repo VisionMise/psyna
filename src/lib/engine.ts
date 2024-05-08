@@ -101,6 +101,9 @@
             // Create the world
             this.world = new World(this);
 
+            // load the first stage
+            this.world.loadStage('main');
+
             // Create a clock event
             this.startClock();
         }

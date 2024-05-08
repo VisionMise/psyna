@@ -29,16 +29,18 @@ export class Stage {
         return this.stageConfiguration;
     }
     async setup() {
+        // console log the stage name
+        this.world.engine.console(`Loading stage ${this.stageName}`);
         // load the stage configuration
         this.stageConfiguration = await this.loadConfiguration();
-        // add update event listener
-        this.world.engine.Events.addEventListener('update', this.update.bind(this));
         // import the stage map
         this.importStageMap();
+        // add update event listener
+        this.world.engine.Events.addEventListener('frame_update', this.update.bind(this));
     }
     async loadConfiguration() {
         // path of configuration file
-        const path = `./assets/world/${this.stageName}/${this.stageName}.json`;
+        const path = `./game/stage/${this.stageName}/${this.stageName}.json`;
         // load the configuration file
         const response = await fetch(path);
         // check if the configuration file was loaded successfully
@@ -80,10 +82,10 @@ export class Stage {
                 this.renderTileLayer(layer, viewableArea);
                 break;
             case LayerType.Object:
-                this.renderObjectLayer(layer, viewableArea);
+                // this.renderObjectLayer(layer, viewableArea);
                 break;
             case LayerType.Image:
-                this.renderImageLayer(layer, viewableArea);
+                // this.renderImageLayer(layer, viewableArea);
                 break;
         }
     }
@@ -91,6 +93,9 @@ export class Stage {
         // check if the layer is visible
         if (!layer.visible)
             return;
+        // get the tileset image
+        const image = new Image();
+        image.src = `./game/stage/${this.stageName}/${this.stageName}.tileset.png`;
         // get the layer data
         const data = layer.data;
         // get the tile size
@@ -123,7 +128,7 @@ export class Stage {
                     y: row * tileSize.height
                 };
                 // render the tile
-                this.renderTile(tileId, position, tileSize);
+                this.renderTile(tileId, position, tileSize, image);
             }
         }
     }
@@ -142,7 +147,7 @@ export class Stage {
             return;
         // get the image
         const image = new Image();
-        image.src = `./assets/world/${this.stageName}/${layer.image}`;
+        image.src = `./game/stage/${this.stageName}/${layer.image}`;
         // get the image size
         const size = {
             width: layer.width,
@@ -156,12 +161,9 @@ export class Stage {
         // render the image
         this.renderImage(image, position, size);
     }
-    renderTile(tileId, position, size) {
+    renderTile(tileId, position, size, image) {
         // get the tileset
         const tileset = this.stageConfiguration.tilesets[0];
-        // get the tileset image
-        const image = new Image();
-        image.src = `./assets/world/${this.stageName}/${tileset.image}`;
         // get the tileset size
         const tilesetSize = {
             width: tileset.tilewidth,

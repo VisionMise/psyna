@@ -79,21 +79,24 @@ import { World } from "./world";
 
         private async setup() {
 
+            // console log the stage name
+            this.world.engine.console(`Loading stage ${this.stageName}`);
+
             // load the stage configuration
             this.stageConfiguration = await this.loadConfiguration();
 
-            // add update event listener
-            this.world.engine.Events.addEventListener('update', this.update.bind(this));
-
             // import the stage map
             this.importStageMap();
+
+            // add update event listener
+            this.world.engine.Events.addEventListener('frame_update', this.update.bind(this));
 
         }
 
         private async loadConfiguration() {
 
             // path of configuration file
-            const path:string = `./assets/world/${this.stageName}/${this.stageName}.json`;
+            const path:string = `./game/stage/${this.stageName}/${this.stageName}.json`;
 
             // load the configuration file
             const response = await fetch(path);
@@ -152,10 +155,10 @@ import { World } from "./world";
                     this.renderTileLayer(layer, viewableArea);
                     break;
                 case LayerType.Object:
-                    this.renderObjectLayer(layer, viewableArea);
+                    // this.renderObjectLayer(layer, viewableArea);
                     break;
                 case LayerType.Image:
-                    this.renderImageLayer(layer, viewableArea);
+                    // this.renderImageLayer(layer, viewableArea);
                     break;
             }
 
@@ -165,6 +168,10 @@ import { World } from "./world";
 
             // check if the layer is visible
             if (!layer.visible) return;
+
+            // get the tileset image
+            const image = new Image();
+            image.src = `./game/stage/${this.stageName}/${this.stageName}.tileset.png`;
 
             // get the layer data
             const data:number[] = layer.data;
@@ -212,7 +219,7 @@ import { World } from "./world";
                     };
 
                     // render the tile
-                    this.renderTile(tileId, position, tileSize);
+                    this.renderTile(tileId, position, tileSize, image);
 
                 }
 
@@ -239,7 +246,7 @@ import { World } from "./world";
 
             // get the image
             const image = new Image();
-            image.src = `./assets/world/${this.stageName}/${layer.image}`;
+            image.src = `./game/stage/${this.stageName}/${layer.image}`;
 
             // get the image size
             const size:Size = {
@@ -258,14 +265,10 @@ import { World } from "./world";
 
         }
 
-        private renderTile(tileId:number, position:Position, size:Size) {
+        private renderTile(tileId:number, position:Position, size:Size, image:HTMLImageElement) {
             
             // get the tileset
             const tileset = this.stageConfiguration.tilesets[0];
-
-            // get the tileset image
-            const image = new Image();
-            image.src = `./assets/world/${this.stageName}/${tileset.image}`;
 
             // get the tileset size
             const tilesetSize:Size = {
