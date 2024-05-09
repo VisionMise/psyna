@@ -60,8 +60,14 @@ export class Viewport {
         this.setCanvasSize();
         // append the canvas to the viewport
         this.currentViewport.appendChild(this.currentCanvas);
+        // context settings
+        const contextSettings = {
+            willReadFrequently: true,
+            alpha: true,
+            desynchronized: false
+        };
         // get the canvas context
-        this.currentContext = this.currentCanvas.getContext('2d');
+        this.currentContext = this.currentCanvas.getContext('2d', contextSettings);
         // resize the canvas when the window resizes
         window.addEventListener('resize', () => this.setCanvasSize());
     }

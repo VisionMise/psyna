@@ -9,24 +9,19 @@ import { World } from "./world";
         Image       = 'imagelayer'
     }
 
-    export enum ObjectShape {
-        Polygon     = 'polygon',
-        Rectangle   = 'rectangle',
-        Circle      = 'circle'
-    }
-
-    export interface StageObject {
+    export interface MapObject {
         id:         number;
         name:       string;
         type:       string;
         size:       Size;
         position:   Position;
         rotation:   number;
-        shape:      ObjectShape;
+        visible:    boolean;
+        ellipse?:   boolean;
         polygon?:   Position[];
     }
 
-    export interface StageMap {
+    export interface MapConfiguration {
         dimensions: Size;
         tilesize:   Size;
         layers:     StageLayer[];
@@ -46,16 +41,30 @@ import { World } from "./world";
         visible?:   boolean;
     }
 
+    export interface TilesetTile {
+        id:         number;
+        position:   Position;
+        size:       Size;
+        image:      ImageData;
+    }
+
 //#endregion
 
 //#region Stage Class
 
     export class Stage {
 
-        protected stageName:string;
-        protected stageConfiguration:any;
-        protected stageMap:StageMap;
         protected world:World;
+
+        protected stageName:string;
+        protected stageConfig:any;
+        protected stageAssets:{} = {};
+
+        protected mapConfig:MapConfiguration;
+        protected mapObjects:MapObject[] = [];
+        protected mapTileset:ImageData[] = [];
+
+        public flag_ready:boolean = false;
 
         public constructor(stageName:string, world:World) {
 
@@ -74,7 +83,18 @@ import { World } from "./world";
         }
 
         public get configuration() : any {
-            return this.stageConfiguration;
+            return this.stageConfig;
+        }
+
+        public async loaded(): Promise<void> {
+            return new Promise((resolve, reject) => {
+                const interval = setInterval(() => {
+                    if (this.flag_ready) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 100);
+            });
         }
 
         private async setup() {
@@ -83,10 +103,20 @@ import { World } from "./world";
             this.world.engine.console(`Loading stage ${this.stageName}`);
 
             // load the stage configuration
-            this.stageConfiguration = await this.loadConfiguration();
+            this.stageConfig = await this.loadConfiguration();
 
             // import the stage map
             this.importStageMap();
+
+            // preload assets
+            await this.preloadAssets();
+
+            // create the tileset
+            this.mapTileset = this.createTilesetFromImage(this.stageAssets['tileset'], this.mapConfig.tilesize);
+
+
+            // Set ready flag
+            this.flag_ready = true;
 
             // add update event listener
             this.world.engine.Events.addEventListener('frame_update', this.update.bind(this));
@@ -113,21 +143,44 @@ import { World } from "./world";
 
         private importStageMap() {
 
-            this.stageMap = {
+            this.mapConfig = {
                 dimensions: {
-                    width: this.stageConfiguration.width,
-                    height: this.stageConfiguration.height
+                    width: this.stageConfig.width,
+                    height: this.stageConfig.height
                 },
                 tilesize: {
-                    width: this.stageConfiguration.tilewidth,
-                    height: this.stageConfiguration.tileheight
+                    width: this.stageConfig.tilewidth,
+                    height: this.stageConfig.tileheight
                 },
                 layers: []
             };
 
             // get layers
-            this.stageMap.layers = this.stageConfiguration.layers as StageLayer[];
+            this.mapConfig.layers = this.stageConfig.layers as StageLayer[];
+
+            // structure layer data
+            this.mapConfig.layers.forEach(layer => {
+                if (layer.type === LayerType.TileLayer) {
+                    layer.data = this.structureLayerData(layer);
+                }
+            });
             
+        }
+
+        private async preloadAssets() {
+            
+            // get the tileset image
+            const image = new Image();
+            image.src = `./game/stage/${this.stageName}/${this.stageName}.tileset.png`;
+
+            // wait for the image to load
+            await new Promise((resolve, reject) => {
+                image.onload = resolve;
+                image.onerror = reject;
+            });
+
+            // add the image to the assets
+            this.stageAssets['tileset'] = image;
         }
 
         private update() {
@@ -139,13 +192,122 @@ import { World } from "./world";
 
         private render() {
 
+            // clear the canvas
+            const context = this.world.viewport.context;
+            context.clearRect(0, 0, this.world.viewport.size.width, this.world.viewport.size.height);
+            context.globalCompositeOperation = 'source-over';
+            
             // get viewable area from world camera
             const viewableArea = this.world.viewableArea;
-
+            
             // render each layer
-            this.stageMap.layers.forEach(layer => this.renderLayer(layer, viewableArea));
+            this.mapConfig.layers.forEach(layer => this.renderLayer(layer, viewableArea));
 
+        }
 
+        private structureLayerData(layer:StageLayer) : [][] {
+
+            // linear data
+            const linearData:number[] = layer.data;
+
+            // layer height and width
+            const width = layer.width;
+            const height = layer.height;
+            let index:number = 0;
+
+            // 2d tile data
+            const structuredData:any = [];
+
+            // loop through the linear data
+            for (let y = 0; y < height; y++) {
+
+                // create a new row
+                structuredData[y] = [];
+
+                // loop through the row
+                for (let x = 0; x < width; x++) {
+
+                    // add the tile to the row
+                    structuredData[y][x] = linearData[index] ?? 0;
+                    index++;
+
+                }
+
+            }
+
+            return structuredData;
+        }
+
+        private createTilesetFromImage(image:HTMLImageElement, tileSize:Size) : ImageData[] {
+            
+            // get the canvas
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d', { alpha: true, willReadFrequently: true});
+            context.globalCompositeOperation = 'source-over';
+
+            // set the canvas size
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            // draw the image
+            context.drawImage(image, 0, 0);
+
+            // create array to store the tiles
+            const tiles = [];
+
+            // get the starting tile id
+            let tileId:number = this.configuration.tilesets[0].firstgid ?? 1;
+
+            // loop through the image data
+            for (let y = 0; y < image.height; y += tileSize.height) {
+                for (let x = 0; x < image.width; x += tileSize.width) {
+
+                    // get the image data
+                    const imageData = context.getImageData(x, y, tileSize.width, tileSize.height);
+
+                    // add the tile to the tileset
+                    tiles[tileId] = imageData;
+
+                    // increment the tile id
+                    tileId++;
+                }
+            }
+
+            return tiles;
+        }
+
+        private getTilesInView(layer:StageLayer, viewableArea:BoxRect, tileSize:Size) : [][] {
+            
+            // get the layer data
+            const layerData = layer.data as number[][];
+
+            // get tiles based on camera position
+            // and zoom
+            const tilesInView = [];
+
+            // loop through the layer data
+            for (let y = 0; y < layerData.length; y++) {
+
+                // check if the row is in view
+                if (y * tileSize.height < viewableArea.y1 || y * tileSize.height > viewableArea.y2) continue;
+
+                // create a new row
+                tilesInView[y] = [];
+
+                // loop through the row
+                for (let x = 0; x < layerData[y].length; x++) {
+
+                    // check if the tile is in view
+                    if (x * tileSize.width < viewableArea.x1 || x * tileSize.width > viewableArea.x2) continue;
+
+                    // add the tile to the row
+                    tilesInView[y][x] = layerData[y][x];
+
+                }
+
+            }
+
+            return tilesInView;
         }
 
         private renderLayer(layer:StageLayer, viewableArea:BoxRect) {
@@ -169,175 +331,42 @@ import { World } from "./world";
             // check if the layer is visible
             if (!layer.visible) return;
 
-            // get the tileset image
-            const image = new Image();
-            image.src = `./game/stage/${this.stageName}/${this.stageName}.tileset.png`;
+            // get the tiles in view
+            const viewableTiles = this.getTilesInView(layer, viewableArea, this.mapConfig.tilesize);
 
-            // get the layer data
-            const data:number[] = layer.data;
-
-            // get the tile size
-            const tileSize:Size = this.stageMap.tilesize;
-
-            // viewable area
-            const viewable:BoxRect = viewableArea;
-
-            // get the number of columns
-            const cols:number = this.stageMap.dimensions.width / tileSize.width;
-
-            // get the number of rows
-            const rows:number = this.stageMap.dimensions.height / tileSize.height;
-
-            // get the starting row
-            const startRow:number = Math.floor(viewable.y1 / tileSize.height);
-
-            // get the starting column
-            const startCol:number = Math.floor(viewable.x1 / tileSize.width);
-
-            // get the ending row
-            const endRow:number = Math.floor(viewable.y2 / tileSize.height);
-
-            // get the ending column
-            const endCol:number = Math.floor(viewable.x2 / tileSize.width);
-
-            // loop through the rows
-            for (let row = startRow; row < endRow; row++) {
-
-                // loop through the columns
-                for (let col = startCol; col < endCol; col++) {
-
-                    // get the tile index
-                    const index:number = row * cols + col;
-
-                    // get the tile id
-                    const tileId:number = data[index];
-
-                    // get the tile position
-                    const position:Position = {
-                        x: col * tileSize.width,
-                        y: row * tileSize.height
-                    };
-
-                    // render the tile
-                    this.renderTile(tileId, position, tileSize, image);
-
+            // render the tiles
+            for (let y = 0; y < viewableTiles.length; y++) {
+                for (let x = 0; x < viewableTiles[y].length; x++) {
+                    this.renderTile(viewableTiles[y][x], { x: x * this.mapConfig.tilesize.width, y: y * this.mapConfig.tilesize.height }, this.mapConfig.tilesize);        
                 }
-
             }
-        }
-
-        private renderObjectLayer(layer:StageLayer, viewableArea:BoxRect)  {
-
-            // check if the layer is visible
-            if (!layer.visible) return;
-
-            // get the objects
-            const objects:StageObject[] = layer.objects;
-
-            // loop through the objects
-            objects.forEach(object => this.renderObject(object));
 
         }
 
-        private renderImageLayer(layer:StageLayer, viewableArea:BoxRect) {
-
-            // check if the layer is visible
-            if (!layer.visible) return;
-
-            // get the image
-            const image = new Image();
-            image.src = `./game/stage/${this.stageName}/${layer.image}`;
-
-            // get the image size
-            const size:Size = {
-                width: layer.width,
-                height: layer.height
-            };
-
-            // get the position
-            const position:Position = {
-                x: layer.position.x,
-                y: layer.position.y
-            };
-
-            // render the image
-            this.renderImage(image, position, size);
-
-        }
-
-        private renderTile(tileId:number, position:Position, size:Size, image:HTMLImageElement) {
+        private renderTile(tileId:number, position:Position, size:Size) {
             
-            // get the tileset
-            const tileset = this.stageConfiguration.tilesets[0];
+            // get tile from tileset
+            const tile:ImageData = this.mapTileset[tileId] ?? null;
 
-            // get the tileset size
-            const tilesetSize:Size = {
-                width: tileset.tilewidth,
-                height: tileset.tileheight
-            };
+            // if no tile found return
+            if (!tile) return;
 
-            // get the number of columns
-            const cols:number = tileset.imagewidth / tilesetSize.width;
+            // create a canvas to draw the tile
+            const canvas = document.createElement('canvas');
+            canvas.width = size.width;
+            canvas.height = size.height;
 
-            // get the tile position
-            const tilePosition:Position = {
-                x: (tileId % cols) * tilesetSize.width,
-                y: Math.floor(tileId / cols) * tilesetSize.height
-            };
-
-            // render the tile
-            this.renderImage(image, position, size, tilePosition, tilesetSize);            
-        }
-
-        private renderImage(image: HTMLImageElement, position: Position, size: Size, tilePosition?: Position, tilesetSize?: Size) {
-
-            // get the canvas context
-            const context = this.world.viewport.context;
-
+            const context = canvas.getContext('2d', { alpha: true, willReadFrequently: true });
+            context.globalCompositeOperation = 'source-over';
+            
             // draw the image
-            context.drawImage(image, tilePosition.x, tilePosition.y, tilesetSize.width, tilesetSize.height, position.x, position.y, size.width, size.height);
+            context.putImageData(tile, 0, 0);
+
+            // draw the tile to the canvas
+            this.world.viewport.context.drawImage(canvas, position.x, position.y);
+
 
         }
-
-        private renderObject(object:StageObject) {
-
-            // create a polygon for the object
-            const polygon:Position[] = object.polygon.map(point => {
-                return {
-                    x: object.position.x + point.x,
-                    y: object.position.y + point.y
-                };
-            });
-
-            // render the object
-            this.renderPolygon(polygon);
-        }
-
-        private renderPolygon(polygon:Position[]) {
-
-            // get the canvas context
-            const context = this.world.viewport.context;
-
-            // start the path
-            context.beginPath();
-
-            // move to the first point
-            context.moveTo(polygon[0].x, polygon[0].y);
-
-            // loop through the points
-            for (let i = 1; i < polygon.length; i++) {
-                context.lineTo(polygon[i].x, polygon[i].y);
-            }
-
-            // close the path
-            context.closePath();
-
-            // stroke the path
-            context.stroke();
-
-        }
-
-
 
     }
 
