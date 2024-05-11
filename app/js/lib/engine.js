@@ -3,24 +3,21 @@ import { World } from "./world/world.js";
 //#endregion
 //#region constants
 // Psyna Engine version
-const PSYNA_VERSION = '0.0.1';
-//#endregion
-//#region enums
-export var Shape;
-(function (Shape) {
-    Shape[Shape["Rectangle"] = 0] = "Rectangle";
-    Shape[Shape["Circle"] = 1] = "Circle";
-})(Shape || (Shape = {}));
+const PSYNA_VERSION = '0.0.2';
 //#endregion
 //#region Game Engine
 export class Engine {
     constructor() {
         this.Events = new EventTarget();
-        // Log the setup
-        this.console('Engine started');
+        this.console('Welcome to Psyna');
         // Setup the world
         // then start the game
-        this.setup().then(() => this.run());
+        this.setup().then(() => {
+            // Run the game
+            this.run();
+            // Log the setup
+            this.console('Game Engine started');
+        });
     }
     startClock() {
         this.worldClock = setInterval(() => this.Events.dispatchEvent(new CustomEvent('clock_update')), 1000);
@@ -32,7 +29,7 @@ export class Engine {
         // Create the world
         this.world = new World(this);
         // load the first stage
-        this.world.loadStage('main');
+        await this.world.loadStage('main');
         // Create a clock event
         this.startClock();
     }

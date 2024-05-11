@@ -9,20 +9,10 @@
 //#region constants
 
     // Psyna Engine version
-    const PSYNA_VERSION = '0.0.1';
+    const PSYNA_VERSION = '0.0.2';
 
 //#endregion
 
-
-
-//#region enums
-
-    export enum Shape {
-        Rectangle,
-        Circle
-    }
-
-//#endregion
 
 
 
@@ -38,23 +28,6 @@
         height:number;
     }
 
-    export interface BoxRect {
-        x1:number;
-        y1:number;
-        x2:number;
-        y2:number;
-    }
-
-    export interface BoxCircle {
-        position:Position;
-        radius:number;
-    }
-
-    export interface GameObject {
-        position:Position;
-        shape:Shape;
-        boundry:BoxRect|BoxCircle;
-    }
 
 //#endregion
 
@@ -71,12 +44,19 @@
 
         public constructor() {
 
-            // Log the setup
-            this.console('Engine started');
+            this.console('Welcome to Psyna');
 
             // Setup the world
             // then start the game
-            this.setup().then(() => this.run());
+            this.setup().then(() => {
+
+                // Run the game
+                this.run()
+
+                // Log the setup
+                this.console('Game Engine started');
+
+            });
         }
 
         public startClock() {
@@ -93,7 +73,7 @@
             this.world = new World(this);
 
             // load the first stage
-            this.world.loadStage('main');
+            await this.world.loadStage('main');
 
             // Create a clock event
             this.startClock();

@@ -1,6 +1,7 @@
 //#region Imports
 
-    import { BoxRect, Engine, Position, Size } from "../engine.js";
+    import { Engine } from "../engine.js";
+    import { Viewport } from "../ui/viewport.js";
     import { Stage } from "./stage.js";
 
 //#endregion
@@ -14,6 +15,7 @@
 
         private currentStage:Stage;
         private gameEngine:Engine;
+        private viewport:Viewport;
 
         public constructor(gameEngine:Engine) {
 
@@ -21,7 +23,15 @@
             this.gameEngine = gameEngine;
 
             // Log the setup
-            this.gameEngine.console('World initialized');
+            this.gameEngine.console('Creating the world');
+
+            // Setup the world
+            this.setup().then(() => {
+
+                // Log the setup
+                this.gameEngine.console('World created');
+
+            });
         }
 
         public get stage() : Stage {
@@ -32,35 +42,6 @@
             return this.gameEngine;
         }
 
-        // public get viewport() : Viewport {
-        //     return this.gameEngine.viewport;
-        // }
-
-        // public get viewableArea() : BoxRect {
-
-        //     // get the camera position
-        //     const cameraPos:Position = this.viewport.camera.position
-
-        //     // get the viewport size
-        //     const viewportSize:Size = this.viewport.size;
-
-        //     // scale the viewport size
-        //     // by the camera zoom level
-        //     viewportSize.width *= this.viewport.camera.zoom;
-        //     viewportSize.height *= this.viewport.camera.zoom;
-
-        //     // calculate the viewable area
-        //     // based on the camera position and the viewport size
-        //     // pos is center of viewport
-        //     return {
-        //         x1: cameraPos.x - viewportSize.width,
-        //         y1: cameraPos.y - viewportSize.height,
-        //         x2: cameraPos.x + viewportSize.width ,
-        //         y2: cameraPos.y + viewportSize.height 
-        //     };
-
-        // }
-
         public async loadStage(stageName: string) {
 
             // Load the stage
@@ -68,17 +49,13 @@
 
             // wait for the stage to load
             await this.currentStage.loaded();
+        }
 
-            // Set camera bounds based on the stage dimensions
-            const stageBounds = {
-                x1: 0,
-                y1: 0,
-                x2: this.currentStage.configuration.width,
-                y2: this.currentStage.configuration.height
-            };
+        private async setup() : Promise<void> {
 
-            // // Set the camera bounds
-            // this.viewport.camera.bounds = stageBounds;
+            // create the viewport
+            this.viewport = new Viewport();
+
         }
 
     }

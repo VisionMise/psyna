@@ -1,4 +1,12 @@
-//#region Enums
+//#region Imports
+//#endregion
+//#region enums
+export var Shape;
+(function (Shape) {
+    Shape[Shape["Rectangle"] = 0] = "Rectangle";
+    Shape[Shape["Circle"] = 1] = "Circle";
+    Shape[Shape["Polygon"] = 2] = "Polygon";
+})(Shape || (Shape = {}));
 export var LayerType;
 (function (LayerType) {
     LayerType["TileLayer"] = "tilelayer";
@@ -38,7 +46,7 @@ export class Stage {
     }
     async setup() {
         // console log the stage name
-        this.world.engine.console(`Loading stage ${this.stageName}`);
+        this.world.engine.console(`Loading stage: ${this.stageName}`);
         // load the stage configuration
         this.stageConfig = await this.loadConfiguration();
         // import the stage map
@@ -85,6 +93,8 @@ export class Stage {
                 layer.data = this.structureLayerData(layer);
             }
         });
+        // console log the map configuration
+        this.world.engine.console("Stage Map Loaded");
     }
     async preloadAssets() {
         // get the tileset image

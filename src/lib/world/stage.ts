@@ -1,13 +1,31 @@
-//#region Enums
+//#region Imports
 
-import { BoxRect, Position, Size } from "../engine";
-import { World } from "./world";
+    import { Position, Size } from "../engine";
+    import { World } from "./world";
+
+//#endregion
+
+
+
+//#region enums
+
+    export enum Shape {
+        Rectangle,
+        Circle,
+        Polygon
+    }
 
     export enum LayerType {
         TileLayer   = 'tilelayer',
         Object      = 'objectgroup',
         Image       = 'imagelayer'
     }
+
+//#endregion
+
+
+
+//#region Interfaces
 
     export interface MapObject {
         id:         number;
@@ -47,8 +65,33 @@ import { World } from "./world";
         size:       Size;
         image:      ImageData;
     }
+    
+    export interface ShapeRect {
+        x1:number;
+        y1:number;
+        x2:number;
+        y2:number;
+    }
+
+    export interface ShapeCircle {
+        position:Position;
+        radius:number;
+    }
+
+    export interface ShapePolygon {
+        position:Position;
+        points:Position[];
+    }
+
+    export interface GameObject {
+        position:Position;
+        shape:Shape;
+        boundry:ShapeRect|ShapeCircle|ShapePolygon;
+    }
 
 //#endregion
+
+
 
 //#region Stage Class
 
@@ -100,7 +143,7 @@ import { World } from "./world";
         private async setup() {
 
             // console log the stage name
-            this.world.engine.console(`Loading stage ${this.stageName}`);
+            this.world.engine.console(`Loading stage: ${this.stageName}`);
 
             // load the stage configuration
             this.stageConfig = await this.loadConfiguration();
@@ -164,6 +207,9 @@ import { World } from "./world";
                     layer.data = this.structureLayerData(layer);
                 }
             });
+
+            // console log the map configuration
+            this.world.engine.console("Stage Map Loaded");
             
         }
 
@@ -268,7 +314,7 @@ import { World } from "./world";
             return tiles;
         }
 
-        private getTilesInView(layer:StageLayer, viewableArea:BoxRect, tileSize:Size) : [][] {
+        private getTilesInView(layer:StageLayer, viewableArea:ShapeRect, tileSize:Size) : [][] {
             
             // get the layer data
             const layerData = layer.data as number[][];
@@ -302,7 +348,7 @@ import { World } from "./world";
             return tilesInView;
         }
 
-        private renderLayer(layer:StageLayer, viewableArea:BoxRect) {
+        private renderLayer(layer:StageLayer, viewableArea:ShapeRect) {
 
             switch (layer.type) {
                 case LayerType.TileLayer:
@@ -318,7 +364,7 @@ import { World } from "./world";
 
         }
 
-        private renderTileLayer(layer:StageLayer, viewableArea:BoxRect) {
+        private renderTileLayer(layer:StageLayer, viewableArea:ShapeRect) {
 
             // check if the layer is visible
             if (!layer.visible) return;
