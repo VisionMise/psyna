@@ -1,7 +1,5 @@
 //#region imports
 
-    import { Viewport } from "./output/viewport.js";
-    import { Camera } from "./world/camera.js";
     import { World } from "./world/world.js";
 
 //#endregion
@@ -66,7 +64,6 @@
 
     export class Engine {
 
-        public viewport:Viewport;
         private world:World;
         private worldClock:number;
 
@@ -91,12 +88,6 @@
         }
 
         private async setup() {
-
-            // create the viewport
-            this.viewport = new Viewport();
-
-            // Set the camera
-            this.viewport.camera = new Camera(this.viewport);
 
             // Create the world
             this.world = new World(this);

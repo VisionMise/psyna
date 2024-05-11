@@ -15,28 +15,28 @@ export class World {
     get engine() {
         return this.gameEngine;
     }
-    get viewport() {
-        return this.gameEngine.viewport;
-    }
-    get viewableArea() {
-        // get the camera position
-        const cameraPos = this.viewport.camera.position;
-        // get the viewport size
-        const viewportSize = this.viewport.size;
-        // scale the viewport size
-        // by the camera zoom level
-        viewportSize.width *= this.viewport.camera.zoom;
-        viewportSize.height *= this.viewport.camera.zoom;
-        // calculate the viewable area
-        // based on the camera position and the viewport size
-        // pos is center of viewport
-        return {
-            x1: cameraPos.x - viewportSize.width / 2,
-            y1: cameraPos.y - viewportSize.height / 2,
-            x2: cameraPos.x + viewportSize.width / 2,
-            y2: cameraPos.y + viewportSize.height / 2
-        };
-    }
+    // public get viewport() : Viewport {
+    //     return this.gameEngine.viewport;
+    // }
+    // public get viewableArea() : BoxRect {
+    //     // get the camera position
+    //     const cameraPos:Position = this.viewport.camera.position
+    //     // get the viewport size
+    //     const viewportSize:Size = this.viewport.size;
+    //     // scale the viewport size
+    //     // by the camera zoom level
+    //     viewportSize.width *= this.viewport.camera.zoom;
+    //     viewportSize.height *= this.viewport.camera.zoom;
+    //     // calculate the viewable area
+    //     // based on the camera position and the viewport size
+    //     // pos is center of viewport
+    //     return {
+    //         x1: cameraPos.x - viewportSize.width,
+    //         y1: cameraPos.y - viewportSize.height,
+    //         x2: cameraPos.x + viewportSize.width ,
+    //         y2: cameraPos.y + viewportSize.height 
+    //     };
+    // }
     async loadStage(stageName) {
         // Load the stage
         this.currentStage = new Stage(stageName, this);
@@ -49,8 +49,8 @@ export class World {
             x2: this.currentStage.configuration.width,
             y2: this.currentStage.configuration.height
         };
-        // Set the camera bounds
-        this.viewport.camera.bounds = stageBounds;
+        // // Set the camera bounds
+        // this.viewport.camera.bounds = stageBounds;
     }
 }
 //#endregion

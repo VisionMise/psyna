@@ -192,16 +192,8 @@ import { World } from "./world";
 
         private render() {
 
-            // clear the canvas
-            const context = this.world.viewport.context;
-            context.clearRect(0, 0, this.world.viewport.size.width, this.world.viewport.size.height);
-            context.globalCompositeOperation = 'source-over';
-            
-            // get viewable area from world camera
-            const viewableArea = this.world.viewableArea;
-            
-            // render each layer
-            this.mapConfig.layers.forEach(layer => this.renderLayer(layer, viewableArea));
+            // // render each layer
+            // this.mapConfig.layers.forEach(layer => this.renderLayer(layer, viewableArea));
 
         }
 
@@ -361,11 +353,6 @@ import { World } from "./world";
             
             // draw the image
             context.putImageData(tile, 0, 0);
-
-            // draw the tile to the canvas
-            this.world.viewport.context.drawImage(canvas, position.x, position.y);
-
-
         }
 
     }

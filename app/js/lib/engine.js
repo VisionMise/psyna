@@ -1,6 +1,4 @@
 //#region imports
-import { Viewport } from "./output/viewport.js";
-import { Camera } from "./world/camera.js";
 import { World } from "./world/world.js";
 //#endregion
 //#region constants
@@ -31,10 +29,6 @@ export class Engine {
         clearInterval(this.worldClock);
     }
     async setup() {
-        // create the viewport
-        this.viewport = new Viewport();
-        // Set the camera
-        this.viewport.camera = new Camera(this.viewport);
         // Create the world
         this.world = new World(this);
         // load the first stage
