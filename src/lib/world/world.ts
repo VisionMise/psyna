@@ -17,21 +17,26 @@
         private gameEngine:Engine;
         private viewport:Viewport;
 
+        private flag_ready:boolean = false;
+
         public constructor(gameEngine:Engine) {
 
             // Set the game engine
             this.gameEngine = gameEngine;
 
-            // Log the setup
-            this.gameEngine.console('Creating the world');
-
             // Setup the world
             this.setup().then(() => {
+                    
+                // Set the ready flag
+                this.flag_ready = true;
 
                 // Log the setup
-                this.gameEngine.console('World created');
+                this.gameEngine.console('Game world ready');
+            });;
+        }
 
-            });
+        public get ready() : boolean {
+            return this.flag_ready;
         }
 
         public get stage() : Stage {
@@ -42,7 +47,15 @@
             return this.gameEngine;
         }
 
-        public async loadStage(stageName: string) {
+        public async loaded() : Promise<void> {    
+            // Wait for the world to be ready
+            while (!this.ready) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+
+        public async loadStage(stageName: string = 'main') : Promise<void> {
 
             // Load the stage
             this.currentStage = new Stage(stageName, this);
@@ -56,6 +69,8 @@
             // create the viewport
             this.viewport = new Viewport();
 
+            // Load the stage
+            await this.loadStage();
         }
 
     }

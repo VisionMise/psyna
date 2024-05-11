@@ -5,15 +5,20 @@ import { Stage } from "./stage.js";
 //#region World Class
 export class World {
     constructor(gameEngine) {
+        this.flag_ready = false;
         // Set the game engine
         this.gameEngine = gameEngine;
-        // Log the setup
-        this.gameEngine.console('Creating the world');
         // Setup the world
         this.setup().then(() => {
+            // Set the ready flag
+            this.flag_ready = true;
             // Log the setup
-            this.gameEngine.console('World created');
+            this.gameEngine.console('Game world ready');
         });
+        ;
+    }
+    get ready() {
+        return this.flag_ready;
     }
     get stage() {
         return this.currentStage;
@@ -21,7 +26,13 @@ export class World {
     get engine() {
         return this.gameEngine;
     }
-    async loadStage(stageName) {
+    async loaded() {
+        // Wait for the world to be ready
+        while (!this.ready) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+    async loadStage(stageName = 'main') {
         // Load the stage
         this.currentStage = new Stage(stageName, this);
         // wait for the stage to load
@@ -30,6 +41,8 @@ export class World {
     async setup() {
         // create the viewport
         this.viewport = new Viewport();
+        // Load the stage
+        await this.loadStage();
     }
 }
 //#endregion

@@ -16,7 +16,7 @@ export class Engine {
             // Run the game
             this.run();
             // Log the setup
-            this.console('Game Engine started');
+            this.console('Game Engine running');
         });
     }
     startClock() {
@@ -28,8 +28,8 @@ export class Engine {
     async setup() {
         // Create the world
         this.world = new World(this);
-        // load the first stage
-        await this.world.loadStage('main');
+        // Wait for the world to be ready
+        await this.world.loaded();
         // Create a clock event
         this.startClock();
     }
