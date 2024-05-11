@@ -1,10 +1,11 @@
 //#region Imports
 import { Viewport } from "../ui/viewport.js";
-import { Stage } from "./stage.js";
+import { Map } from "./map.js";
 //#endregion
 //#region World Class
 export class World {
     constructor(gameEngine) {
+        this.worldTicks = 0;
         this.flag_ready = false;
         // Set the game engine
         this.gameEngine = gameEngine;
@@ -20,29 +21,41 @@ export class World {
     get ready() {
         return this.flag_ready;
     }
-    get stage() {
-        return this.currentStage;
+    get map() {
+        return this.currentMap;
     }
     get engine() {
         return this.gameEngine;
     }
-    async loaded() {
-        // Wait for the world to be ready
-        while (!this.ready) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
+    get viewport() {
+        return this.worldViewport;
     }
-    async loadStage(stageName = 'main') {
-        // Load the stage
-        this.currentStage = new Stage(stageName, this);
+    get ticks() {
+        return this.worldTicks;
+    }
+    async loaded() {
+        return new Promise(resolve => {
+            const interval = setInterval(() => {
+                if (this.ready) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+    async loadMap(mapName = 'main') {
+        // Load the map
+        this.currentMap = new Map(mapName, this);
         // wait for the stage to load
-        await this.currentStage.loaded();
+        await this.currentMap.loaded();
     }
     async setup() {
         // create the viewport
-        this.viewport = new Viewport();
+        this.worldViewport = new Viewport();
+        // hook in to the clock update event
+        this.gameEngine.Events.addEventListener('clock_update', () => this.worldTicks++);
         // Load the stage
-        await this.loadStage();
+        await this.loadMap();
     }
 }
 //#endregion

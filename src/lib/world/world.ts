@@ -2,7 +2,7 @@
 
     import { Engine } from "../engine.js";
     import { Viewport } from "../ui/viewport.js";
-    import { Stage } from "./stage.js";
+    import { Map } from "./map.js";
 
 //#endregion
 
@@ -13,9 +13,10 @@
 
     export class World {
 
-        private currentStage:Stage;
+        private currentMap:Map;
         private gameEngine:Engine;
-        private viewport:Viewport;
+        private worldViewport:Viewport;
+        private worldTicks:number = 0;
 
         private flag_ready:boolean = false;
 
@@ -39,38 +40,53 @@
             return this.flag_ready;
         }
 
-        public get stage() : Stage {
-            return this.currentStage;
+        public get map() : Map {
+            return this.currentMap;
         }
 
         public get engine() : Engine {
             return this.gameEngine;
         }
 
+        public get viewport() : Viewport {
+            return this.worldViewport;
+        }
+
+        public get ticks() : number {
+            return this.worldTicks;
+        }
+
         public async loaded() : Promise<void> {    
-            // Wait for the world to be ready
-            while (!this.ready) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
+            return new Promise<void>(resolve => {
+                const interval = setInterval(() => {
+                    if (this.ready) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 100);
+            });
         }
         
 
-        public async loadStage(stageName: string = 'main') : Promise<void> {
+        public async loadMap(mapName: string = 'main') : Promise<void> {
 
-            // Load the stage
-            this.currentStage = new Stage(stageName, this);
+            // Load the map
+            this.currentMap = new Map(mapName, this);
 
             // wait for the stage to load
-            await this.currentStage.loaded();
+            await this.currentMap.loaded();
         }
 
         private async setup() : Promise<void> {
 
             // create the viewport
-            this.viewport = new Viewport();
+            this.worldViewport = new Viewport();
+
+            // hook in to the clock update event
+            this.gameEngine.Events.addEventListener('clock_update', () => this.worldTicks++);
 
             // Load the stage
-            await this.loadStage();
+            await this.loadMap();
         }
 
     }

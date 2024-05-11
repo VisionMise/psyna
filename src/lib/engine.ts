@@ -38,7 +38,7 @@
     export class Engine {
 
         private world:World;
-        private worldClock:number;
+        private worldClock:number;        
 
         public readonly Events = new EventTarget();
 
