@@ -1,5 +1,4 @@
 //#region Imports
-import { Viewport } from "../ui/viewport.js";
 import { Map } from "./map.js";
 //#endregion
 //#region World Class
@@ -27,9 +26,6 @@ export class World {
     get engine() {
         return this.gameEngine;
     }
-    get viewport() {
-        return this.worldViewport;
-    }
     get ticks() {
         return this.worldTicks;
     }
@@ -50,11 +46,9 @@ export class World {
         await this.currentMap.loaded();
     }
     async setup() {
-        // create the viewport
-        this.worldViewport = new Viewport();
         // hook in to the clock update event
         this.gameEngine.Events.addEventListener('clock_update', () => this.worldTicks++);
-        // Load the stage
+        // Load the map
         await this.loadMap();
     }
 }

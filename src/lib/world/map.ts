@@ -1,6 +1,7 @@
 //#region Imports
 
     import { Position, Size } from "../engine";
+import { Viewport } from "../ui/viewport";
     import { World } from "./world";
 
 //#endregion
@@ -42,10 +43,10 @@
     export interface MapConfiguration {
         dimensions: Size;
         tilesize:   Size;
-        layers:     StageLayer[];
+        layers:     MapLayer[];
     }
 
-    export interface StageLayer {
+    export interface MapLayer {
         id:         number;
         name:       string;
         type:       LayerType;
@@ -127,6 +128,14 @@
             return this.mapName;
         }
 
+        public get size() : Size {
+            return this.mapConfig.dimensions;
+        }
+
+        public get tileSize() : Size {
+            return this.mapConfig.tilesize;
+        }
+
         public get configuration() : any {
             return this.mapConfig;
         }
@@ -193,7 +202,7 @@
             };
 
             // get layers
-            this.mapConfig.layers = jsonConfig.layers as StageLayer[];
+            this.mapConfig.layers = jsonConfig.layers as MapLayer[];
 
             // structure layer data
             this.mapConfig.layers.forEach(layer => {
@@ -204,7 +213,7 @@
 
         }
 
-        private structureLayerData(layer:StageLayer) : [][] {
+        private structureLayerData(layer:MapLayer) : [][] {
             
             // linear data
             const linearData:number[] = layer.data;
@@ -317,7 +326,13 @@
 
             // create a canvas
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
+            canvas.style.imageRendering = 'pixelated';
+            
+            const context = canvas.getContext('2d', {
+                alpha: true
+            });
+
+            context.imageSmoothingEnabled = false;
 
             // set the canvas size
             canvas.width = size.width;
@@ -328,6 +343,93 @@
 
             // get the image data
             return context.getImageData(position.x, position.y, size.width, size.height);
+        }
+
+        public tile(tileId:number) : TilesetTile {
+            return this.mapTileset[tileId] ?? null;
+        }
+
+        public getTileData(layerId:number, x:number, y:number) : number {
+            return this.mapConfig.layers[layerId].data[y][x];
+        }
+
+        public layer(layerId:number) : MapLayer {
+            return this.mapConfig.layers[layerId] ?? null;
+        }
+
+        public area(x1:number, y1:number, x2:number, y2:number) : {layers:any} {
+
+                
+            // get all layers
+            const layers:MapLayer[] = this.mapConfig.layers;
+
+            // get the tile data
+            const tileData:{layers:any} = {layers:[]};
+
+            // loop through the layers
+            for (let index in layers) {
+
+                // get the layer
+                const layer:MapLayer = layers[index];
+
+                // get the layer data
+                const data:number[][] = layer?.data ?? false;
+
+                // check if there is data
+                if (!data) continue;
+
+                tileData.layers[index] = [];
+
+
+                // loop through the data
+                for (let y = y1; y < y2; y++) {
+
+                    tileData.layers[index][y] = [];
+
+                    const row:number[] = data[y];
+
+                    for (let x = x1; x < x2; x++) {
+
+                        // get the tile id
+                        const tileId:number = data[y][x];
+
+                        // get the tile data
+                        const tile:TilesetTile = this.tile(tileId);
+
+                        // add the tile data to the tileData
+                        tileData.layers[index][y][x] = tile;
+
+                    }
+
+                }
+            }
+
+            return tileData;
+        }
+
+        public scale(viewport: Viewport, zoom: number = 7): Size {
+            // get the viewport size
+            const viewportSize: Size = viewport.size;
+
+            // get the tile size
+            const tileSize: Size = this.tileSize;
+
+            // Calculate scale based on zoom, adjust for the viewport size
+            const scaleX = zoom;
+            const scaleY = zoom;
+
+            // Calculate the maximum allowable scale based on the viewport size
+            const maxScaleX = viewportSize.width / (tileSize.width * scaleX);
+            const maxScaleY = viewportSize.height / (tileSize.height * scaleY);
+
+            // Adjust scale to ensure it doesn't exceed the viewport size
+            const adjustedScaleX = Math.min(maxScaleX, scaleX);
+            const adjustedScaleY = Math.min(maxScaleY, scaleY);
+
+            // Ensure uniform scaling by using the smaller of the two scales
+            const uniformScale = Math.min(adjustedScaleX, adjustedScaleY);
+
+            return { width: uniformScale, height: uniformScale };
         }
 
     }

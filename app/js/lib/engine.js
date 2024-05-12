@@ -1,4 +1,7 @@
 //#region imports
+import { Renderer } from "./rendering/renderer.js";
+import { Camera } from "./ui/camera.js";
+import { Viewport } from "./ui/viewport.js";
 import { World } from "./world/world.js";
 //#endregion
 //#region constants
@@ -26,10 +29,16 @@ export class Engine {
         clearInterval(this.worldClock);
     }
     async setup() {
+        // create a new viewport
+        const viewport = new Viewport();
         // Create the world
         this.world = new World(this);
         // Wait for the world to be ready
         await this.world.loaded();
+        // create a new camera
+        this.camera = new Camera(this.world.map);
+        // create a renderer
+        this.renderer = new Renderer(this, viewport, this.world.map, this.camera);
         // Create a clock event
         this.startClock();
     }

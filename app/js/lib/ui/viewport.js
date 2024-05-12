@@ -1,9 +1,15 @@
 const VIEWPORT_RATIO = { width: 11, height: 9 };
 export class Viewport {
     constructor() {
+        const opt = {
+            alpha: true,
+            desynchronized: true,
+            willReadFrequently: true
+        };
         // Create the canvas
         this.viewportCanvas = document.createElement('canvas');
-        this.viewportContext = this.canvas.getContext('2d');
+        this.viewportContext = this.canvas.getContext('2d', opt);
+        this.viewportContext.imageSmoothingEnabled = false;
         // get the viewport element
         const viewport = document.getElementById('viewport');
         // Set the canvas size

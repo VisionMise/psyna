@@ -15,7 +15,6 @@
 
         private currentMap:Map;
         private gameEngine:Engine;
-        private worldViewport:Viewport;
         private worldTicks:number = 0;
 
         private flag_ready:boolean = false;
@@ -48,10 +47,6 @@
             return this.gameEngine;
         }
 
-        public get viewport() : Viewport {
-            return this.worldViewport;
-        }
-
         public get ticks() : number {
             return this.worldTicks;
         }
@@ -79,13 +74,10 @@
 
         private async setup() : Promise<void> {
 
-            // create the viewport
-            this.worldViewport = new Viewport();
-
             // hook in to the clock update event
             this.gameEngine.Events.addEventListener('clock_update', () => this.worldTicks++);
 
-            // Load the stage
+            // Load the map
             await this.loadMap();
         }
 
