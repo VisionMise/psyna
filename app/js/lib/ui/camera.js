@@ -8,7 +8,10 @@ export class Camera {
         this.targetPosition = this.position;
         // listen for the update_frame event
         // and call the update method
-        engine.Events.addEventListener('frame_update', () => this.update());
+        engine.Events.addEventListener('frame_update', (event) => {
+            const deltaTime = event?.detail ?? 0;
+            this.update(deltaTime);
+        });
     }
     set position(position) {
         this.currentPosition = position;
@@ -32,22 +35,22 @@ export class Camera {
     }
     moveTo(position) {
         // set the target position
-        this.currentPosition = position;
+        this.targetPosition = position;
     }
-    update() {
-        if (this.targetPosition.x !== this.currentPosition.x || this.targetPosition.y !== this.currentPosition.y) {
-            const dx = this.targetPosition.x - this.currentPosition.x;
-            const dy = this.targetPosition.y - this.currentPosition.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const speed = 0.2;
-            if (distance > 0.25) {
-                this.currentPosition.x += dx * speed;
-                this.currentPosition.y += dy * speed;
-            }
-            else {
-                this.currentPosition = this.targetPosition;
-                this.targetPosition = this.currentPosition;
-            }
+    update(deltaTime, speed = 5) {
+        // Constants
+        const lerpFactor = speed / 10;
+        // Calculate the difference in position
+        const dx = this.targetPosition.x - this.currentPosition.x;
+        const dy = this.targetPosition.y - this.currentPosition.y;
+        // Perform linear interpolation with adjusted deltaTime
+        this.currentPosition.x += dx * lerpFactor * deltaTime;
+        this.currentPosition.y += dy * lerpFactor * deltaTime;
+        // Snap to target if very close to avoid jitter
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < 0.1) { // Lowered threshold
+            this.currentPosition.x = this.targetPosition.x;
+            this.currentPosition.y = this.targetPosition.y;
         }
     }
 }

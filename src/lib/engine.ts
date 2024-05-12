@@ -44,6 +44,7 @@ import { World } from "./world/world.js";
         private worldClock:number;
         private camera:Camera;        
         private renderer:Renderer;
+        private lastFrameTime:number = Date.now();
         
         public readonly Events = new EventTarget();
 
@@ -93,13 +94,18 @@ import { World } from "./world/world.js";
             this.startClock();
         }
 
-        private run(delta?:number) {
+        private run() {
+            // calculate the delta time
+            const now:number = Date.now();
+            const deltaTime:number = (now - this.lastFrameTime) / 1000;
+            this.lastFrameTime = now;
+
             // raise the update event
             // every frame
-            this.Events.dispatchEvent(new CustomEvent('frame_update', {detail:delta}));
+            this.Events.dispatchEvent(new CustomEvent('frame_update', {detail:deltaTime}));
 
             // request the next frame
-            requestAnimationFrame(delta => this.run(delta));
+            requestAnimationFrame(() => this.run());
         }
 
         public console(message:string) {

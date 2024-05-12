@@ -11,6 +11,7 @@ const PSYNA_VERSION = '0.0.2';
 //#region Game Engine
 export class Engine {
     constructor() {
+        this.lastFrameTime = Date.now();
         this.Events = new EventTarget();
         this.console('Welcome to Psyna');
         // Setup the world
@@ -42,12 +43,16 @@ export class Engine {
         // Create a clock event
         this.startClock();
     }
-    run(delta) {
+    run() {
+        // calculate the delta time
+        const now = Date.now();
+        const deltaTime = (now - this.lastFrameTime) / 1000;
+        this.lastFrameTime = now;
         // raise the update event
         // every frame
-        this.Events.dispatchEvent(new CustomEvent('frame_update', { detail: delta }));
+        this.Events.dispatchEvent(new CustomEvent('frame_update', { detail: deltaTime }));
         // request the next frame
-        requestAnimationFrame(delta => this.run(delta));
+        requestAnimationFrame(() => this.run());
     }
     console(message) {
         const title = "color: #08f; font-weight: bold;";
