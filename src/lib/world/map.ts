@@ -1,6 +1,7 @@
 //#region Imports
 
     import { Position, Size } from "../engine";
+import { Camera } from "../ui/camera";
 import { Viewport } from "../ui/viewport";
     import { World } from "./world";
 
@@ -103,7 +104,7 @@ import { Viewport } from "../ui/viewport";
         protected mapName:string;
         protected mapConfig:MapConfiguration;
         protected mapSpritesheet:ImageData;
-        protected mapTileset:TilesetTile[];
+        protected layerTilesets:TilesetTile[][] = [];
 
         private flag_ready:boolean = false;
 
@@ -165,8 +166,13 @@ import { Viewport } from "../ui/viewport";
             // preload tileset
             await this.preloadTileSpriteSheet();
 
-            // create tileset
-            await this.createTilesetFromSpriteSheet();
+            // create tileset for each layer
+            this.mapConfig.layers.forEach(layer => {
+                if (layer.type === LayerType.TileLayer) {
+                    this.layerTilesets[layer.id] = this.createTilesetForLayer(layer);
+                }
+            });
+
         }
 
         private async loadConfiguration() {
@@ -188,6 +194,8 @@ import { Viewport } from "../ui/viewport";
         }
 
         private createMapConfiguration(jsonConfig:any) {
+
+            this.world.engine.console("Loading map configuration");
 
             this.mapConfig = {
                 dimensions: {
@@ -228,7 +236,7 @@ import { Viewport } from "../ui/viewport";
 
             // loop through the linear data
             for (let y = 0; y < height; y++) {
-
+                
                 // create a new row
                 structuredData[y] = [];
 
@@ -236,13 +244,16 @@ import { Viewport } from "../ui/viewport";
                 for (let x = 0; x < width; x++) {
 
                     // add the tile to the row
-                    structuredData[y][x] = linearData[index] ?? 0;
+                    structuredData[y][x] = linearData[index] ?? -1;
+
+                    // increment the index
                     index++;
 
                 }
 
             }
 
+            // return the structured data
             return structuredData;
         }
 
@@ -260,15 +271,21 @@ import { Viewport } from "../ui/viewport";
 
             // get image data
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
+            const context = canvas.getContext('2d', {alpha: true} );
+            context.imageSmoothingEnabled = false;
+            context.globalCompositeOperation = 'source-over';
 
             // set the canvas size
             canvas.width = image.width;
             canvas.height = image.height;
+            canvas.style.imageRendering = 'pixelated';
+            canvas.style.width = `${image.width}px`;
+            canvas.style.height = `${image.height}px`;
+
 
             // draw the image
             context.drawImage(image, 0, 0);
-            
+
             // get the image data
             const imageData = context.getImageData(0, 0, image.width, image.height);
 
@@ -276,77 +293,86 @@ import { Viewport } from "../ui/viewport";
             this.mapSpritesheet = imageData
         }
 
-        private async createTilesetFromSpriteSheet() : Promise<void> {
 
-            // get tile size from configuration
-            const tileSize:Size = {
-                width: this.mapConfig.tilesize.width,
-                height: this.mapConfig.tilesize.height
-            };
+        private createTilesetForLayer(layer: MapLayer): TilesetTile[] {
 
-            // get the tileset image
-            const spritesheet:ImageData = this.mapSpritesheet;
+            this.world.engine.console(`Creating tileset for layer ${layer.name}`);
 
-            // get the number of tiles in the spritesheet
-            const tilesX:number = spritesheet.width / tileSize.width;
-            const tilesY:number = spritesheet.height / tileSize.height;
+            // Get the tileset image
+            const spritesheet: ImageData = this.mapSpritesheet;
+            const tileSize = this.mapConfig.tilesize;
 
-            // create tileset
-            const tileset:TilesetTile[] = [];
+            // Calculate the number of tiles in the spritesheet
+            const tilesX: number = spritesheet.width / tileSize.width;
+            const tilesY: number = spritesheet.height / tileSize.height;
 
-            // loop through the spritesheet
-            for (let y = 0; y < tilesY; y++) {
-                for (let x = 0; x < tilesX; x++) {
+            // Create tileset array
+            const tileset: TilesetTile[] = [];
+
+            // Loop through the layer data which contains indices to the tiles used in this layer
+            for (let y = 0; y < layer.data.length; y++) {
+                for (let x = 0; x < layer.data[y].length; x++) {
+
+                    const tileId = layer.data[y][x];
 
                     // get the tile position
-                    const position:Position = {
-                        x: x * tileSize.width,
-                        y: y * tileSize.height
-                    };
+                    const tileX = (tileId % tilesX) * tileSize.width - tileSize.width;
+                    const tileY = Math.floor(tileId / tilesX) * tileSize.height;
 
-                    // get the tile image data
-                    const tileImageData:ImageData = this.getTileImageData(position, tileSize, spritesheet);
+                    // Get the tile image data
+                    const position: Position = { x: tileX, y: tileY };
+                    const tileImageData: ImageData = this.getTileImageData(position, tileSize, spritesheet);
 
-                    // add the tile to the tileset
-                    tileset.push({
-                        id: tileset.length,
+                    tileset[tileId] = {
+                        id: tileId,
                         position: position,
                         size: tileSize,
                         image: tileImageData
-                    });
-
+                    };
                 }
             }
 
-            // set the tileset
-            this.mapTileset = tileset;
+            // Return the tileset
+            return tileset;
         }
 
-        private getTileImageData(position:Position, size:Size, spritesheet:ImageData) : ImageData {
+
+        private getTileImageData(position:Position, tileSize:Size, spritesheet:ImageData) : ImageData {
 
             // create a canvas
             const canvas = document.createElement('canvas');
             canvas.style.imageRendering = 'pixelated';
             
             const context = canvas.getContext('2d', {
-                alpha: true
-            });
+                alpha: true,
+                willReadFrequently: true
+            }); 
 
             context.imageSmoothingEnabled = false;
+            context.globalCompositeOperation = 'copy';
 
             // set the canvas size
-            canvas.width = size.width;
-            canvas.height = size.height;
+            canvas.width = spritesheet.width;
+            canvas.height = spritesheet.height;
 
             // draw the image
             context.putImageData(spritesheet, 0, 0);
-
+            
             // get the image data
-            return context.getImageData(position.x, position.y, size.width, size.height);
+            const imageData:ImageData = context.getImageData(position.x, position.y, tileSize.width, tileSize.height);
+
+            // convert the image data to a canvas image source
+            return imageData;
         }
 
-        public tile(tileId:number) : TilesetTile {
-            return this.mapTileset[tileId] ?? null;
+
+        public tile(layer:MapLayer, tileId:number) : TilesetTile {
+
+            // get the tileset for the layer
+            const tileset:TilesetTile[] = this.layerTilesets[layer.id];
+
+            // get the tile
+            return tileset[tileId] ?? null;
         }
 
         public getTileData(layerId:number, x:number, y:number) : number {
@@ -357,79 +383,60 @@ import { Viewport } from "../ui/viewport";
             return this.mapConfig.layers[layerId] ?? null;
         }
 
-        public area(x1:number, y1:number, x2:number, y2:number) : {layers:any} {
 
-                
-            // get all layers
-            const layers:MapLayer[] = this.mapConfig.layers;
+        public area(x1: number, y1: number, x2: number, y2: number): { layers: any } {
 
-            // get the tile data
-            const tileData:{layers:any} = {layers:[]};
-
-            // loop through the layers
-            for (let index in layers) {
-
-                // get the layer
-                const layer:MapLayer = layers[index];
-
-                // get the layer data
-                const data:number[][] = layer?.data ?? false;
-
-                // check if there is data
-                if (!data) continue;
-
-                tileData.layers[index] = [];
-
-
-                // loop through the data
-                for (let y = y1; y < y2; y++) {
-
-                    tileData.layers[index][y] = [];
-
-                    const row:number[] = data[y];
-
-                    for (let x = x1; x < x2; x++) {
-
-                        // get the tile id
-                        const tileId:number = data[y][x];
-
-                        // get the tile data
-                        const tile:TilesetTile = this.tile(tileId);
-
-                        // add the tile data to the tileData
-                        tileData.layers[index][y][x] = tile;
-
-                    }
-
-                }
+            // create an area
+            // make sure the area is within bounds
+            const area = {
+                x1: Math.max(0, Math.min(x1, x2)),
+                y1: Math.max(0, Math.min(y1, y2)),
+                x2: Math.max(x1, x2),
+                y2: Math.max(y1, y2)
             }
+
+            // Prepare the tile data structure
+            const tileData: { layers: any } = { layers: [] };
+
+            // Iterate through all layers
+            this.mapConfig.layers.forEach((layer, layerIndex) => {
+
+                // Only process layers that have tile data
+                if (!layer || !layer.data) return;
+
+                //development todo
+                //right not only tile layers are supported
+                if (layer.type !== LayerType.TileLayer) return;
+                
+                // Get the layer data
+                const layerData = layer.data as number[][];
+                tileData.layers[layerIndex] = [];
+
+                // Iterate through the specified rows and columns within bounds
+                for (let y = area.y1; y < area.y2 && y < layerData.length; y++) {
+
+                    // Create a new row
+                    const row: any[] = [];
+                    tileData.layers[layerIndex].push(row);
+
+                    for (let x = area.x1; x < area.x2 && x < layerData[y].length; x++) {
+                        const tileId = layerData[y][x];
+                        const tile = this.tile(layer, tileId);
+                        row.push(tile); 
+                    }
+                }
+            
+            });
 
             return tileData;
         }
 
-        public scale(viewport: Viewport, zoom: number = 7): Size {
-            // get the viewport size
-            const viewportSize: Size = viewport.size;
-
-            // get the tile size
-            const tileSize: Size = this.tileSize;
-
-            // Calculate scale based on zoom, adjust for the viewport size
-            const scaleX = zoom;
-            const scaleY = zoom;
-
-            // Calculate the maximum allowable scale based on the viewport size
-            const maxScaleX = viewportSize.width / (tileSize.width * scaleX);
-            const maxScaleY = viewportSize.height / (tileSize.height * scaleY);
-
-            // Adjust scale to ensure it doesn't exceed the viewport size
-            const adjustedScaleX = Math.min(maxScaleX, scaleX);
-            const adjustedScaleY = Math.min(maxScaleY, scaleY);
-
-            // Ensure uniform scaling by using the smaller of the two scales
-            const uniformScale = Math.min(adjustedScaleX, adjustedScaleY);
-
-            return { width: uniformScale, height: uniformScale };
+        public scale(camera:Camera, tileSize:Size): Size {
+            const zoomFactor = (camera.zoom / 10);
+            const baseTileSize = tileSize.width;
+            const scaleWidth = Math.floor(baseTileSize * zoomFactor);
+            const scaleHeight = Math.floor(baseTileSize * zoomFactor);
+            return { width: scaleWidth, height: scaleHeight };
         }
 
     }

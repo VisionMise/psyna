@@ -1,36 +1,34 @@
 import { Size } from "../engine";
 
-const VIEWPORT_RATIO:Size = {width:11, height:9};
-
 export class Viewport {
 
     private viewportCanvas:HTMLCanvasElement;
     private viewportContext:CanvasRenderingContext2D;
 
+
     public constructor() {
 
         const opt:CanvasRenderingContext2DSettings = {
             alpha: true,
-            desynchronized: true,
+            desynchronized: false,
             willReadFrequently: true
-        }
+        };
 
+        
         // Create the canvas
         this.viewportCanvas = document.createElement('canvas');
-        this.viewportContext = this.canvas.getContext('2d', opt);
+        this.viewportContext = this.viewportCanvas.getContext('2d', opt);
         this.viewportContext.imageSmoothingEnabled = false;
+        this.viewportContext.globalCompositeOperation = 'source-over';
 
         // get the viewport element
         const viewport = document.getElementById('viewport');
 
         // Set the canvas size
-        const ratio:Size = VIEWPORT_RATIO;
-
-        // Set the canvas size
-        this.setCanvasSize(ratio);
+        this.setCanvasSize();
 
         // resize event
-        window.addEventListener('resize', () => this.setCanvasSize(ratio));
+        window.addEventListener('resize', () => this.setCanvasSize());
 
         // Append the canvas to the viewport
         viewport.appendChild(this.canvas);
@@ -75,21 +73,16 @@ export class Viewport {
         };
     }
 
-    public setCanvasSize(ratioDimensions:Size) {
 
-        // set the size on the canvas
-        // to the largest size possible
-        // while maintaining the ratio
-        const width:number = window.innerWidth;
-        const height:number = window.innerHeight;
 
-        // get the ratio
-        const ratio:number = Math.min(width / ratioDimensions.width, height / ratioDimensions.height);
-
-        // set the size
-        this.canvas.width   = (ratio * ratioDimensions.width) - 20;
-        this.canvas.height  = (ratio * ratioDimensions.height) - 20;
+    public setCanvasSize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.canvas.style.width = `${window.innerWidth}px`;
+        this.canvas.style.height = `${window.innerHeight}px`;
     }
+
+
 
 
 }

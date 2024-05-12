@@ -71,6 +71,7 @@
             // wait for the stage to load
             await this.currentMap.loaded();
         }
+        
 
         private async setup() : Promise<void> {
 

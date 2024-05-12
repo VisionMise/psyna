@@ -1,6 +1,6 @@
 export class Camera {
     constructor(worldMap) {
-        this.currentZoom = 8;
+        this.currentZoom = 3;
         // set the map
         this.map = worldMap;
         // set the camera position
@@ -18,14 +18,12 @@ export class Camera {
     set zoom(zoom) {
         this.currentZoom = zoom;
     }
-    viewableTiles() {
-        // get the tile size
+    viewableTiles(viewport) {
+        // Assuming viewport dimensions are accessible via this.viewportWidth and this.viewportHeight
         const tileSize = this.map.tileSize;
-        // the size of the map
-        const mapSize = this.map.size;
-        // get the number of tiles in the viewport
-        const tilesX = Math.ceil(mapSize.width / tileSize.width);
-        const tilesY = Math.ceil(mapSize.height / tileSize.height);
+        // Calculate the number of tiles that fit in the viewport's width and height
+        const tilesX = Math.ceil(viewport.width / tileSize.width);
+        const tilesY = Math.ceil(viewport.height / tileSize.height);
         return { width: tilesX, height: tilesY };
     }
 }

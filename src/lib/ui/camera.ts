@@ -1,11 +1,12 @@
 import { Size, Position } from "../engine";
 import { TilesetTile, Map } from "../world/map";
+import { Viewport } from "./viewport";
 
 export class Camera {
 
     private currentPosition:Position;
     private map:Map;
-    private currentZoom:number = 8;
+    private currentZoom:number = 3;
 
     public constructor(worldMap:Map) {
 
@@ -16,6 +17,8 @@ export class Camera {
         this.position = { x: 0, y: 0 };
 
     }
+    
+    
 
     public set position(position:Position) {
         this.currentPosition = position;
@@ -33,17 +36,13 @@ export class Camera {
         this.currentZoom = zoom;
     }
 
-    public viewableTiles() : Size {
+    public viewableTiles(viewport:Viewport) : Size {
+        // Assuming viewport dimensions are accessible via this.viewportWidth and this.viewportHeight
+        const tileSize: Size = this.map.tileSize;
 
-        // get the tile size
-        const tileSize:Size = this.map.tileSize
-
-        // the size of the map
-        const mapSize:Size = this.map.size;
-
-        // get the number of tiles in the viewport
-        const tilesX:number = Math.ceil(mapSize.width / tileSize.width);
-        const tilesY:number = Math.ceil(mapSize.height / tileSize.height);
+        // Calculate the number of tiles that fit in the viewport's width and height
+        const tilesX: number = Math.ceil(viewport.width / tileSize.width);
+        const tilesY: number = Math.ceil(viewport.height / tileSize.height);
 
         return { width: tilesX, height: tilesY };
     }
