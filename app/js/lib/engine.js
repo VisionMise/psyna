@@ -36,7 +36,7 @@ export class Engine {
         // Wait for the world to be ready
         await this.world.loaded();
         // create a new camera
-        this.camera = new Camera(this.world.map);
+        this.camera = new Camera(this.world.map, this);
         // create a renderer
         this.renderer = new Renderer(this, viewport, this.world.map, this.camera);
         // Create a clock event
