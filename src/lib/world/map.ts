@@ -395,6 +395,12 @@ import { Viewport } from "../ui/viewport";
                 y2: Math.max(y1, y2)
             }
 
+            // make sure the area are integers
+            area.x1 = Math.floor(area.x1);
+            area.y1 = Math.floor(area.y1);
+            area.x2 = Math.ceil(area.x2);
+            area.y2 = Math.ceil(area.y2);
+
             // Prepare the tile data structure
             const tileData: { layers: any } = { layers: [] };
 

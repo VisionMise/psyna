@@ -55,6 +55,7 @@ export class Renderer {
             height: tiles.height
         };
 
+
         // Get the tile size and calculate scale
         const tileSize = this.map.tileSize;
         const scale: Size = this.map.scale(this.camera, tileSize);

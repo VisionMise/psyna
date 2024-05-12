@@ -39,10 +39,14 @@ export class Camera {
             const dx = this.targetPosition.x - this.currentPosition.x;
             const dy = this.targetPosition.y - this.currentPosition.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            const speed = 0.8;
-            if (distance > 0.5) {
+            const speed = 0.2;
+            if (distance > 0.25) {
                 this.currentPosition.x += dx * speed;
                 this.currentPosition.y += dy * speed;
+            }
+            else {
+                this.currentPosition = this.targetPosition;
+                this.targetPosition = this.currentPosition;
             }
         }
     }
