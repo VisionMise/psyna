@@ -48,7 +48,7 @@ export class Camera {
         this.currentPosition.y += dy * lerpFactor * deltaTime;
         // Snap to target if very close to avoid jitter
         const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 0.1) { // Lowered threshold
+        if (distance < 0.25) { //snap to target if very close
             this.currentPosition.x = this.targetPosition.x;
             this.currentPosition.y = this.targetPosition.y;
         }
