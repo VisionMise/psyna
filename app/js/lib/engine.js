@@ -43,16 +43,17 @@ export class Engine {
         // Create a clock event
         this.startClock();
     }
-    run() {
+    async run() {
         // calculate the delta time
         const now = Date.now();
         const deltaTime = (now - this.lastFrameTime) / 1000;
         this.lastFrameTime = now;
         // raise the update event
         // every frame
+        await this.renderer.render();
         this.Events.dispatchEvent(new CustomEvent('frame_update', { detail: deltaTime }));
         // request the next frame
-        requestAnimationFrame(() => this.run());
+        requestAnimationFrame(async () => await this.run());
     }
     console(message) {
         const title = "color: #08f; font-weight: bold;";

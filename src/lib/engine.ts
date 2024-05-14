@@ -94,7 +94,7 @@ import { World } from "./world/world.js";
             this.startClock();
         }
 
-        private run() {
+        private async run() {
             // calculate the delta time
             const now:number = Date.now();
             const deltaTime:number = (now - this.lastFrameTime) / 1000;
@@ -102,10 +102,11 @@ import { World } from "./world/world.js";
 
             // raise the update event
             // every frame
+            await this.renderer.render();
             this.Events.dispatchEvent(new CustomEvent('frame_update', {detail:deltaTime}));
 
             // request the next frame
-            requestAnimationFrame(() => this.run());
+            requestAnimationFrame(async () => await this.run());
         }
 
         public console(message:string) {

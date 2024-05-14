@@ -29,6 +29,9 @@ export class Map {
             this.flag_ready = true;
         });
     }
+    async tileToImage(tile) {
+        return await createImageBitmap(tile.image);
+    }
     get name() {
         return this.mapName;
     }
@@ -61,9 +64,9 @@ export class Map {
         // preload tileset
         await this.preloadTileSpriteSheet();
         // create tileset for each layer
-        this.mapConfig.layers.forEach(layer => {
+        this.mapConfig.layers.forEach(async (layer) => {
             if (layer.type === LayerType.TileLayer) {
-                this.layerTilesets[layer.id] = this.createTilesetForLayer(layer);
+                this.layerTilesets[layer.id] = await this.createTilesetForLayer(layer);
             }
         });
     }
@@ -153,7 +156,7 @@ export class Map {
         // add the image to the assets
         this.mapSpritesheet = imageData;
     }
-    createTilesetForLayer(layer) {
+    async createTilesetForLayer(layer) {
         this.world.engine.console(`Creating tileset for layer ${layer.name}`);
         // Get the tileset image
         const spritesheet = this.mapSpritesheet;
@@ -177,7 +180,7 @@ export class Map {
                     id: tileId,
                     position: position,
                     size: tileSize,
-                    image: tileImageData
+                    image: await createImageBitmap(tileImageData)
                 };
             }
         }

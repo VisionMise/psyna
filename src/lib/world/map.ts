@@ -65,7 +65,7 @@ import { Viewport } from "../ui/viewport";
         id:         number;
         position:   Position;
         size:       Size;
-        image:      ImageData;
+        image:      ImageBitmap;
     }
     
     export interface ShapeRect {
@@ -98,6 +98,10 @@ import { Viewport } from "../ui/viewport";
 //#region Map Class
 
     export class Map {
+
+        public async tileToImage(tile: TilesetTile): Promise<ImageBitmap>{
+            return await createImageBitmap(tile.image);
+        }
 
         protected world:World;
 
@@ -167,9 +171,9 @@ import { Viewport } from "../ui/viewport";
             await this.preloadTileSpriteSheet();
 
             // create tileset for each layer
-            this.mapConfig.layers.forEach(layer => {
+            this.mapConfig.layers.forEach(async layer => {
                 if (layer.type === LayerType.TileLayer) {
-                    this.layerTilesets[layer.id] = this.createTilesetForLayer(layer);
+                    this.layerTilesets[layer.id] = await this.createTilesetForLayer(layer);
                 }
             });
 
@@ -294,7 +298,7 @@ import { Viewport } from "../ui/viewport";
         }
 
 
-        private createTilesetForLayer(layer: MapLayer): TilesetTile[] {
+        private async createTilesetForLayer(layer: MapLayer): Promise<TilesetTile[]> {
 
             this.world.engine.console(`Creating tileset for layer ${layer.name}`);
 
@@ -327,7 +331,7 @@ import { Viewport } from "../ui/viewport";
                         id: tileId,
                         position: position,
                         size: tileSize,
-                        image: tileImageData
+                        image: await createImageBitmap(tileImageData)
                     };
                 }
             }
