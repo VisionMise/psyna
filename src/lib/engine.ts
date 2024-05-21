@@ -85,7 +85,7 @@ import { World } from "./world/world.js";
             await this.world.loaded();
 
             // create a new camera
-            this.camera = new Camera(this.world.map, this);
+            this.camera = new Camera(this.world.map, this, viewport);
 
             // create a renderer
             this.renderer = new Renderer(this, viewport, this.world.map, this.camera);

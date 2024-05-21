@@ -17,35 +17,51 @@ export class Renderer {
         this.flag_ready = true;
     }
     async render() {
-        const tiles = this.camera.viewableTiles(this.viewport);
-        const area = {
-            x: Math.floor(this.camera.position.x),
-            y: Math.floor(this.camera.position.y),
-            width: tiles.width,
-            height: tiles.height
-        };
-        const tileSize = this.map.tileSize;
-        const scale = this.map.scale(this.camera, tileSize);
-        const scaledTileSize = {
-            width: tileSize.width * scale.width,
-            height: tileSize.height * scale.height
-        };
+        if (!this.flag_ready)
+            return;
+        // Get the area to render
+        // in tiles
+        const area = this.camera.area();
+        // Clear the viewport
         this.viewport.context.imageSmoothingEnabled = false;
         this.viewport.clear();
-        // Adjusted area to include partial tiles
-        const tileData = this.map.area(area.x - 1, area.y - 1, area.x + area.width + 2, area.y + area.height + 2);
-        const layers = tileData.layers;
+        // Get the tile data
+        const layers = this.map.area(area)?.layers ?? null;
+        this.tileData = layers;
+        // calculate the scaled tile size
+        const scaledTileSize = {
+            width: this.map.tileSize.width * this.camera.zoom,
+            height: this.map.tileSize.height * this.camera.zoom
+        };
+        const tileSize = this.map.tileSize;
+        const center = this.camera.center();
+        // Each layer
         for (const layer of layers) {
-            for (let y = 0; y <= area.height + 1; y++) {
-                for (let x = 0; x <= area.width + 1; x++) {
-                    if (!layer[y] || !layer[y][x])
+            // Each Row
+            for (let y = area.y1; y <= area.y2; y++) {
+                const row = layer[y] ?? null;
+                if (!row)
+                    continue;
+                // Each Tile
+                for (let x = area.x1; x <= area.x2; x++) {
+                    // Get the tile
+                    const tile = row[x] ?? null;
+                    if (!tile)
                         continue;
-                    const tile = layer[y][x];
-                    // Calculate position using exact floating-point values
-                    const posX = (x - this.camera.position.x + area.x) * scaledTileSize.width;
-                    const posY = (y - this.camera.position.y + area.y) * scaledTileSize.height;
-                    // Draw the tile at the exact floating-point positio
-                    this.viewport.context.drawImage(tile.image, 0, 0, tileSize.width, tileSize.height, posX, posY, scaledTileSize.width + 1, scaledTileSize.height + 1);
+                    // Get the image
+                    const image = tile.image;
+                    // Calculate the position
+                    // const position:Position = {
+                    //     x: (x - area.x1) * scaledTileSize.width,
+                    //     y: (y - area.y1) * scaledTileSize.height
+                    // };
+                    // Calculate the position considering the camera's center
+                    const position = {
+                        x: (x * tileSize.width - center.x) * this.camera.zoom + this.viewport.width / 2,
+                        y: (y * tileSize.height - center.y) * this.camera.zoom + this.viewport.height / 2
+                    };
+                    // Draw the tile
+                    this.viewport.context.drawImage(image, 0, 0, tileSize.width, tileSize.height, position.x, position.y, scaledTileSize.width, scaledTileSize.height);
                 }
             }
         }

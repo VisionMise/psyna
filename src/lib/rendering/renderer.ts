@@ -1,7 +1,7 @@
-import { Engine, Size } from "../engine.js";
+import { Engine, Position, Size } from "../engine.js";
 import { Camera } from "../ui/camera.js";
 import { Viewport } from "../ui/viewport.js";
-import { Map, TilesetTile } from "../world/map.js";
+import { Map, ShapeRect, TilesetTile } from "../world/map.js";
 
 export class Renderer {
 
@@ -10,6 +10,7 @@ export class Renderer {
     private viewport:Viewport;
     private engine:Engine;
     private flag_ready:boolean = false;
+    private tileData: any;
 
 
     public constructor(engine:Engine, viewport:Viewport, map:Map, camera:Camera) {
@@ -19,7 +20,7 @@ export class Renderer {
 
         // Set the viewport
         this.viewport = viewport;
-
+ 
         // Set the map
         this.map = map;
 
@@ -37,53 +38,78 @@ export class Renderer {
 
     }
 
-            
-    public async render() {
-        const tiles = this.camera.viewableTiles(this.viewport);
-        const area = {
-            x: Math.floor(this.camera.position.x),
-            y: Math.floor(this.camera.position.y),
-            width: tiles.width,
-            height: tiles.height
-        };
+    async render() {
+        if (!this.flag_ready) return;
 
-        const tileSize = this.map.tileSize;
-        const scale: Size = this.map.scale(this.camera, tileSize);
+        // Get the area to render
+        // in tiles
+        const area:ShapeRect = this.camera.area();
 
-        const scaledTileSize = {
-            width: tileSize.width * scale.width,
-            height: tileSize.height * scale.height
-        };
-
+        // Clear the viewport
         this.viewport.context.imageSmoothingEnabled = false;
         this.viewport.clear();
 
-        // Adjusted area to include partial tiles
-        const tileData = this.map.area(area.x - 1, area.y - 1, area.x + area.width + 2, area.y + area.height + 2);
-        const layers = tileData.layers;
+        // Get the tile data
+        const layers:any     = this.map.area(area)?.layers ?? null;
+        this.tileData        = layers;
 
+        // calculate the scaled tile size
+        const scaledTileSize:Size = {
+            width: this.map.tileSize.width * this.camera.zoom,
+            height: this.map.tileSize.height * this.camera.zoom
+        };
+
+        const tileSize:Size = this.map.tileSize;
+        const center:Position = this.camera.center();
+
+        // Each layer
         for (const layer of layers) {
-            for (let y = 0; y <= area.height + 1; y++) {
-                for (let x = 0; x <= area.width + 1; x++) {
-                    if (!layer[y] || !layer[y][x]) continue;
 
-                    const tile: TilesetTile = layer[y][x];
+            // Each Row
+            for (let y = area.y1; y <= area.y2; y++) {
 
-                    // Calculate position using exact floating-point values
-                    const posX = (x - this.camera.position.x + area.x) * scaledTileSize.width;
-                    const posY = (y - this.camera.position.y + area.y) * scaledTileSize.height;
+                const row = layer[y] ?? null;
+                if (!row) continue;
 
-                    // Draw the tile at the exact floating-point positio
+                // Each Tile
+                for (let x = area.x1; x <= area.x2; x++) {
+
+                    // Get the tile
+                    const tile:TilesetTile = row[x] ?? null;
+                    if (!tile) continue;
+
+                    // Get the image
+                    const image:ImageBitmap = tile.image;
+
+                    // Calculate the position
+                    // const position:Position = {
+                    //     x: (x - area.x1) * scaledTileSize.width,
+                    //     y: (y - area.y1) * scaledTileSize.height
+                    // };
+                    
+                    
+                    // Calculate the position considering the camera's center
+                    const position: Position = {
+                        x: (x * tileSize.width - center.x) * this.camera.zoom + this.viewport.width / 2,
+                        y: (y * tileSize.height - center.y) * this.camera.zoom + this.viewport.height / 2
+                    };
+
+
+
+                    // Draw the tile
                     this.viewport.context.drawImage(
-                        tile.image,
+                        image,
                         0, 0, tileSize.width, tileSize.height,
-                        posX, posY, scaledTileSize.width + 1, scaledTileSize.height + 1
+                        position.x, position.y, scaledTileSize.width, scaledTileSize.height
                     );
-                }
-            }
-        }
-    }
 
+                }
+
+            }
+
+        }
+        
+    }
 
 
 

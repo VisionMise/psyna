@@ -103,8 +103,7 @@ import { Viewport } from "../ui/viewport";
             return await createImageBitmap(tile.image);
         }
 
-        protected world:World;
-
+        protected mapWorld:World;
         protected mapName:string;
         protected mapConfig:MapConfiguration;
         protected mapSpritesheet:ImageData;
@@ -118,7 +117,7 @@ import { Viewport } from "../ui/viewport";
             this.mapName = mapName;
 
             // set the world
-            this.world = world;
+            this.mapWorld = world;
 
             // load the map configuration
             this.setup().then(() => {
@@ -129,21 +128,39 @@ import { Viewport } from "../ui/viewport";
             });
         }
 
+
         public get name() : string {
             return this.mapName;
         }
+
+        public get world() : World {
+            return this.mapWorld;
+        }
+
 
         public get size() : Size {
             return this.mapConfig.dimensions;
         }
 
+        public get bounds() : ShapeRect {
+            return {
+                x1: 0,
+                y1: 0,
+                x2: this.size.width,
+                y2: this.size.height
+            };
+        }
+
+
         public get tileSize() : Size {
             return this.mapConfig.tilesize;
         }
 
+
         public get configuration() : any {
             return this.mapConfig;
         }
+
 
         public async loaded(): Promise<void> {
             return new Promise<void>(resolve => {
@@ -156,10 +173,11 @@ import { Viewport } from "../ui/viewport";
             });
         }
 
+
         private async setup() : Promise<void> {
 
             // console log the stage name
-            this.world.engine.console(`Loading stage: ${this.mapName}`);
+            this.mapWorld.engine.console(`Loading stage: ${this.mapName}`);
 
             // load the stage configuration
             const jsonConfig:{} = await this.loadConfiguration();
@@ -179,6 +197,7 @@ import { Viewport } from "../ui/viewport";
 
         }
 
+
         private async loadConfiguration() {
 
             // path of configuration file
@@ -197,9 +216,10 @@ import { Viewport } from "../ui/viewport";
             return data;
         }
 
+
         private createMapConfiguration(jsonConfig:any) {
 
-            this.world.engine.console("Loading map configuration");
+            this.mapWorld.engine.console("Loading map configuration");
 
             this.mapConfig = {
                 dimensions: {
@@ -224,6 +244,7 @@ import { Viewport } from "../ui/viewport";
             });
 
         }
+
 
         private structureLayerData(layer:MapLayer) : [][] {
             
@@ -260,6 +281,7 @@ import { Viewport } from "../ui/viewport";
             // return the structured data
             return structuredData;
         }
+
 
         private async preloadTileSpriteSheet() : Promise<void> {
 
@@ -300,7 +322,7 @@ import { Viewport } from "../ui/viewport";
 
         private async createTilesetForLayer(layer: MapLayer): Promise<TilesetTile[]> {
 
-            this.world.engine.console(`Creating tileset for layer ${layer.name}`);
+            this.mapWorld.engine.console(`Creating tileset for layer ${layer.name}`);
 
             // Get the tileset image
             const spritesheet: ImageData = this.mapSpritesheet;
@@ -379,31 +401,18 @@ import { Viewport } from "../ui/viewport";
             return tileset[tileId] ?? null;
         }
 
+
         public getTileData(layerId:number, x:number, y:number) : number {
             return this.mapConfig.layers[layerId].data[y][x];
         }
+
 
         public layer(layerId:number) : MapLayer {
             return this.mapConfig.layers[layerId] ?? null;
         }
 
 
-        public area(x1: number, y1: number, x2: number, y2: number): { layers: any } {
-
-            // create an area
-            // make sure the area is within bounds
-            const area = {
-                x1: Math.max(0, Math.min(x1, x2)),
-                y1: Math.max(0, Math.min(y1, y2)),
-                x2: Math.max(x1, x2),
-                y2: Math.max(y1, y2)
-            }
-
-            // make sure the area are integers
-            area.x1 = Math.floor(area.x1);
-            area.y1 = Math.floor(area.y1);
-            area.x2 = Math.ceil(area.x2);
-            area.y2 = Math.ceil(area.y2);
+        public area(area:ShapeRect): { layers: any } {
 
             // Prepare the tile data structure
             const tileData: { layers: any } = { layers: [] };
@@ -425,14 +434,26 @@ import { Viewport } from "../ui/viewport";
                 // Iterate through the specified rows and columns within bounds
                 for (let y = area.y1; y < area.y2 && y < layerData.length; y++) {
 
-                    // Create a new row
-                    const row: any[] = [];
-                    tileData.layers[layerIndex].push(row);
+                    // Skip if the row doesn't exist
+                    if (!layerData[y]) continue;
 
+                    // Create the row if it doesn't exist                    
+                    if (!tileData.layers[layerIndex][y]) tileData.layers[layerIndex][y] = [];
+
+                    // Iterate through the specified columns within bounds
                     for (let x = area.x1; x < area.x2 && x < layerData[y].length; x++) {
+
+                        // Skip if the column doesn't exist
+                        if (!layerData[y][x]) continue;
+
+                        // Get the tile id
                         const tileId = layerData[y][x];
+
+                        // Get the tile
                         const tile = this.tile(layer, tileId);
-                        row.push(tile); 
+
+                        // Add the tile to the tile data
+                        tileData.layers[layerIndex][y][x] = tile;
                     }
                 }
             
@@ -441,6 +462,7 @@ import { Viewport } from "../ui/viewport";
             return tileData;
         }
 
+
         public scale(camera:Camera, tileSize:Size): Size {
             const zoomFactor = (camera.zoom / 10);
             const baseTileSize = tileSize.width;
@@ -448,6 +470,7 @@ import { Viewport } from "../ui/viewport";
             const scaleHeight = Math.floor(baseTileSize * zoomFactor);
             return { width: scaleWidth, height: scaleHeight };
         }
+
 
     }
 

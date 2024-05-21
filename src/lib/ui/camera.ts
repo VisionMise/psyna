@@ -1,5 +1,5 @@
 import { Size, Position, Engine } from "../engine";
-import { TilesetTile, Map } from "../world/map";
+import { TilesetTile, Map, Shape, ShapeRect } from "../world/map";
 import { Viewport } from "./viewport";
 
 export enum MovementType {
@@ -10,21 +10,30 @@ export enum MovementType {
 
 export class Camera {
 
-    private currentPosition:Position;
-    private targetPosition:Position;
+    // position properties
+    private currentPosition:Position; // in pixels
+    private targetPosition:Position;  // in pixels
+
     private currentSpeed:number = 10;
     private currentZoom:number = 3;
-    private currentMovementType:MovementType = MovementType.Linear;
-    private map:Map;
+    private currentMovementType:MovementType = MovementType.Smooth;
+    private currentViewport:Viewport;
+    private worldMap:Map;
 
-    public constructor(worldMap:Map, engine:Engine) {
+    public constructor(worldMap:Map, engine:Engine, viewport:Viewport) {
 
         // set the map
-        this.map = worldMap;
+        // size in tiles
+        this.worldMap = worldMap;
+
+        // set the viewport
+        // size in pixels
+        this.currentViewport = viewport;
     
         // set the camera position
-        this.position = { x: 4, y: 4 };
-        this.targetPosition = this.position;
+        // in pixels
+        this.position = { x: 0, y: 0 };
+        this.targetPosition = {...this.position};
 
         // listen for the update_frame event
         // and call the update method
@@ -67,21 +76,61 @@ export class Camera {
         return this.currentPosition;
     }
 
-    public viewableTiles(viewport:Viewport) : Size {
-        // Assuming viewport dimensions are accessible via this.viewportWidth and this.viewportHeight
-        const tileSize: Size = this.map.tileSize;
+    public get viewport() : Viewport {
+        return this.currentViewport;
+    }
 
-        // Calculate the number of tiles that fit in the viewport's width and height
-        const tilesX: number = Math.ceil(viewport.width / tileSize.width);
-        const tilesY: number = Math.ceil(viewport.height / tileSize.height);
+    public get map() : Map {
+        return this.worldMap;
+    }
 
-        return { width: tilesX, height: tilesY };
+    public viewableTiles() : Size {
+        // assuming the camera is in the center
+        // of the viewport
+
+        // get the number of tiles that fit in the viewport
+        // in pixels
+        let tileCount:Size = {
+            width:  Math.ceil(this.viewport.width / this.map.tileSize.width),
+            height: Math.ceil(this.viewport.height / this.map.tileSize.height)
+        };
+
+        // adjust for zoom
+        tileCount.width = Math.floor(tileCount.width / this.zoom);
+        tileCount.height = Math.floor(tileCount.height / this.zoom);
+
+        // return the tile count
+        return tileCount;        
+    }
+
+    public area(): ShapeRect {
+
+        // buffer
+        const buffer = 1;
+
+        // get the count of viewable tiles
+        const tiles = this.viewableTiles();
+
+        // get the area in tiles
+        let area: ShapeRect = {
+            x1: Math.floor(this.position.x / this.map.tileSize.width - tiles.width / 2) - buffer,
+            y1: Math.floor(this.position.y / this.map.tileSize.height - tiles.height / 2) - buffer,
+            x2: Math.ceil(this.position.x / this.map.tileSize.width + tiles.width / 2) + buffer,
+            y2: Math.ceil(this.position.y / this.map.tileSize.height + tiles.height / 2) + buffer
+        };
+
+        return area;
+    }
+
+
+    public center() : Position {
+        return this.position;
     }
 
     public moveTo(position:Position) {
 
         // set the target position
-        this.targetPosition = position;
+        this.targetPosition = {...position};
 
     }
 
@@ -99,6 +148,33 @@ export class Camera {
                 this.update_instant();
                 break;
         }
+
+        // Clamp the camera position
+        this.clampPosition();
+
+        // draw the camera center as a red circle
+        const context = this.viewport.context;
+        const center:Position = this.viewport.center;
+        context.beginPath();
+        context.arc(center.x, center.y, 5, 0, 2 * Math.PI);        
+        context.fillStyle = 'red';
+        context.fill();
+        context.closePath();
+
+        // draw the camera bounds as a blue rectangle
+        // centered 80% of the viewport
+        const bounds = this.viewport.center;
+        context.beginPath();
+        context.rect(
+            bounds.x - this.viewport.width * 0.4,
+            bounds.y - this.viewport.height * 0.4,
+            this.viewport.width * 0.8,
+            this.viewport.height * 0.8            
+        );        
+        context.strokeStyle = 'blue';
+        context.stroke();
+        context.closePath();
+
     }
 
     private update_linear(deltaTime:number, speed:number) {
@@ -112,7 +188,7 @@ export class Camera {
         const velocity = speed * 2 * deltaTime;
 
         if (distance < velocity) {
-            this.currentPosition = this.targetPosition;
+            this.currentPosition = {...this.targetPosition};
         } else {
 
             //normalize the direction
@@ -147,10 +223,21 @@ export class Camera {
     }
 
     private update_instant() {
-        this.currentPosition = this.targetPosition;
+        this.currentPosition = {...this.targetPosition};
     }
 
 
+private clampPosition(): void {
+    const halfViewportWidth = (this.viewport.width / 2) / this.currentZoom;
+    const halfViewportHeight = (this.viewport.height / 2) / this.currentZoom;
+
+    const mapWidthInPixels = this.map.size.width * this.map.tileSize.width;
+    const mapHeightInPixels = this.map.size.height * this.map.tileSize.height;
+
+    // Ensure the camera does not move out of the map boundaries
+    this.currentPosition.x = Math.max(halfViewportWidth, Math.min(mapWidthInPixels - halfViewportWidth, this.currentPosition.x));
+    this.currentPosition.y = Math.max(halfViewportHeight, Math.min(mapHeightInPixels - halfViewportHeight, this.currentPosition.y));
+}
 
 
 }

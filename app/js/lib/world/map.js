@@ -22,7 +22,7 @@ export class Map {
         // set the map name
         this.mapName = mapName;
         // set the world
-        this.world = world;
+        this.mapWorld = world;
         // load the map configuration
         this.setup().then(() => {
             // Set ready flag
@@ -35,8 +35,19 @@ export class Map {
     get name() {
         return this.mapName;
     }
+    get world() {
+        return this.mapWorld;
+    }
     get size() {
         return this.mapConfig.dimensions;
+    }
+    get bounds() {
+        return {
+            x1: 0,
+            y1: 0,
+            x2: this.size.width,
+            y2: this.size.height
+        };
     }
     get tileSize() {
         return this.mapConfig.tilesize;
@@ -56,7 +67,7 @@ export class Map {
     }
     async setup() {
         // console log the stage name
-        this.world.engine.console(`Loading stage: ${this.mapName}`);
+        this.mapWorld.engine.console(`Loading stage: ${this.mapName}`);
         // load the stage configuration
         const jsonConfig = await this.loadConfiguration();
         // create the map configuration
@@ -84,7 +95,7 @@ export class Map {
         return data;
     }
     createMapConfiguration(jsonConfig) {
-        this.world.engine.console("Loading map configuration");
+        this.mapWorld.engine.console("Loading map configuration");
         this.mapConfig = {
             dimensions: {
                 width: jsonConfig.width,
@@ -157,7 +168,7 @@ export class Map {
         this.mapSpritesheet = imageData;
     }
     async createTilesetForLayer(layer) {
-        this.world.engine.console(`Creating tileset for layer ${layer.name}`);
+        this.mapWorld.engine.console(`Creating tileset for layer ${layer.name}`);
         // Get the tileset image
         const spritesheet = this.mapSpritesheet;
         const tileSize = this.mapConfig.tilesize;
@@ -219,20 +230,7 @@ export class Map {
     layer(layerId) {
         return this.mapConfig.layers[layerId] ?? null;
     }
-    area(x1, y1, x2, y2) {
-        // create an area
-        // make sure the area is within bounds
-        const area = {
-            x1: Math.max(0, Math.min(x1, x2)),
-            y1: Math.max(0, Math.min(y1, y2)),
-            x2: Math.max(x1, x2),
-            y2: Math.max(y1, y2)
-        };
-        // make sure the area are integers
-        area.x1 = Math.floor(area.x1);
-        area.y1 = Math.floor(area.y1);
-        area.x2 = Math.ceil(area.x2);
-        area.y2 = Math.ceil(area.y2);
+    area(area) {
         // Prepare the tile data structure
         const tileData = { layers: [] };
         // Iterate through all layers
@@ -249,13 +247,23 @@ export class Map {
             tileData.layers[layerIndex] = [];
             // Iterate through the specified rows and columns within bounds
             for (let y = area.y1; y < area.y2 && y < layerData.length; y++) {
-                // Create a new row
-                const row = [];
-                tileData.layers[layerIndex].push(row);
+                // Skip if the row doesn't exist
+                if (!layerData[y])
+                    continue;
+                // Create the row if it doesn't exist                    
+                if (!tileData.layers[layerIndex][y])
+                    tileData.layers[layerIndex][y] = [];
+                // Iterate through the specified columns within bounds
                 for (let x = area.x1; x < area.x2 && x < layerData[y].length; x++) {
+                    // Skip if the column doesn't exist
+                    if (!layerData[y][x])
+                        continue;
+                    // Get the tile id
                     const tileId = layerData[y][x];
+                    // Get the tile
                     const tile = this.tile(layer, tileId);
-                    row.push(tile);
+                    // Add the tile to the tile data
+                    tileData.layers[layerIndex][y][x] = tile;
                 }
             }
         });
