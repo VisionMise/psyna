@@ -26,7 +26,7 @@ export class Camera {
     private zoomProgress:number = 0;
 
     // movement properties
-    private currentMovementType:MovementType = MovementType.Smooth;
+    private currentMovementType:MovementType = MovementType.Linear;
     private currentViewport:Viewport;
 
     // map properties
@@ -190,29 +190,6 @@ export class Camera {
         // Draw the camera
         this.drawCamera();
 
-        // // draw the camera center as a red circle
-        // const context = this.viewport.context;
-        // const center:Position = this.viewport.center;
-        // context.beginPath();
-        // context.arc(center.x, center.y, 5, 0, 2 * Math.PI);        
-        // context.fillStyle = 'red';
-        // context.fill();
-        // context.closePath();
-
-        // // draw the camera bounds as a blue rectangle
-        // // centered 80% of the viewport
-        // const bounds = this.viewport.center;
-        // context.beginPath();
-        // context.rect(
-        //     bounds.x - this.viewport.width * 0.4,
-        //     bounds.y - this.viewport.height * 0.4,
-        //     this.viewport.width * 0.8,
-        //     this.viewport.height * 0.8            
-        // );        
-        // context.strokeStyle = 'blue';
-        // context.stroke();
-        // context.closePath();
-
     }
 
     private update_linear(deltaTime:number, speed:number) {
@@ -223,7 +200,7 @@ export class Camera {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Calculate the velocity
-        const velocity = speed * 2 * deltaTime;
+        const velocity = speed * 20 * deltaTime;
 
         if (distance < velocity) {
             this.currentPosition = {...this.targetPosition};

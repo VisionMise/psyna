@@ -40,13 +40,29 @@ import { World } from "./world/world.js";
 
     export class Engine {
 
+        // World
         private world:World;
-        private worldClock:number;
+
+        // World Clock
+        private worldClock:boolean = false;
+        private worldClockSpeed:number = 1;
+        private worldClockTick:number = 0;
+        private worldClockSeconds:number = 0;
+
+        // Camera
         private camera:Camera;        
+
+        // Renderer
         private renderer:Renderer;
-        private lastFrameTime:number = Date.now();
         
+        // Event Handler
         public readonly Events = new EventTarget();
+
+        // Runtime
+        private startTime:Date;
+        private lastFrameTime:number = Date.now();
+        private frameDelay:number = 0;
+        private frameCounter:number = 0;
 
         public constructor() {
 
@@ -57,7 +73,10 @@ import { World } from "./world/world.js";
             this.setup().then(() => {
 
                 // Run the game
-                this.run()
+                this.run();
+
+                // Set the start time
+                this.startTime = new Date();
 
                 // Log the setup
                 this.console('Game Engine running');
@@ -65,12 +84,27 @@ import { World } from "./world/world.js";
             });
         }
 
+        public get World() : World {
+            return this.world;
+        }
+
+        public get runtime() : number {
+            // return the runtime in seconds
+            return (Date.now() - this.startTime.getTime()) / 1000;
+        }
+
+        public get clock() : number {
+            return this.worldClockSeconds;
+        }
+
         public startClock() {
-            this.worldClock = setInterval(() => this.Events.dispatchEvent(new CustomEvent('clock_update')), 1000);
+            this.worldClock = true;
+            this.console('World clock started');
         }
 
         public stopClock() {
-            clearInterval(this.worldClock);
+            this.worldClock = false;
+            this.console('World clock stopped');
         }
 
         private async setup() {
@@ -95,15 +129,63 @@ import { World } from "./world/world.js";
         }
 
         private async run() {
+
             // calculate the delta time
-            const now:number = Date.now();
-            const deltaTime:number = (now - this.lastFrameTime) / 1000;
+            let now:number = Date.now();
+            let deltaTime:number = (now - this.lastFrameTime) / 1000;
             this.lastFrameTime = now;
 
-            // raise the update event
-            // every frame
+            // increment the frame counter
+            this.frameCounter += deltaTime
+
+            // update delta time with the world clock speed
+            deltaTime *= this.worldClockSpeed;
+
+
+            // if the frame delay is less than 
+            // the frame counter, reset the counter
+            if (this.frameCounter >= (this.frameDelay / 1000)) {
+                this.frameCounter = 0;
+            } else {
+                // request the next frame
+                requestAnimationFrame(async () => await this.run());
+                return;
+            }
+
+            // call the renderer
+            // call this directly to avoid the async/await
+            // delay or the frame rate will be affected
+            // all graphics rendering should be done here
+            // or be called from here
             await this.renderer.render();
+
+            // raise the update event every frame
+            // this is not for rendering graphics
+            // but for updating the game state only
+            // such as camera position, player position, etc.
             this.Events.dispatchEvent(new CustomEvent('frame_update', {detail:deltaTime}));
+
+            // update the world clock
+            // every 1 second
+            if (this.worldClock) {
+
+                // update the world clock tick
+                this.worldClockTick += deltaTime;
+
+                // when the world clock tick reaches 1
+                if (this.worldClockTick >= 1) {
+
+                    // raise the world clock event
+                    this.Events.dispatchEvent(new CustomEvent('clock_update', {detail:this.worldClockTick}));
+
+                    // reset the world clock tick
+                    this.worldClockTick = 0;
+
+                    // increment the world clock seconds
+                    this.worldClockSeconds++;
+                }
+
+            }
 
             // request the next frame
             requestAnimationFrame(async () => await this.run());
