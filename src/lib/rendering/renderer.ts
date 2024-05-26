@@ -1,8 +1,7 @@
-import { Engine, Position, Size } from "../engine.js";
+import { Position, Size } from "../engine.js";
 import { Camera } from "../ui/camera.js";
 import { Viewport } from "../ui/viewport.js";
 import { Map, ShapeRect, TilesetTile } from "../world/map.js";
-import { Shader } from "./shader.js";
 
 export class Renderer {
 
@@ -13,19 +12,17 @@ export class Renderer {
     private map:Map;
 
     // Viewport
-    private viewport:Viewport;    
+    private gameViewport:Viewport; 
 
     // Properties
     private flag_ready:boolean = false;
     private tileData: any;
     private imageSmoothing:boolean = false;
-    private appliedShaders:Shader[] = [];
-
 
     public constructor(map:Map, viewport:Viewport, camera:Camera) {
 
         // Set the viewport
-        this.viewport = viewport;
+        this.gameViewport = viewport;
  
         // Set the map
         this.map = map;
@@ -47,7 +44,7 @@ export class Renderer {
 
     public set antiAliasing(value:boolean) {
         this.imageSmoothing = value;
-        this.viewport.context.imageSmoothingEnabled = value;
+        this.gameViewport.context.imageSmoothingEnabled = value;
     }
 
     public get camera() : Camera {
@@ -58,26 +55,6 @@ export class Renderer {
         this.renderingCamera = camera;
     }
 
-    public applyShader(shader:Shader) {
-
-        // Check if the shader is already applied
-        if (this.appliedShaders.includes(shader)) return;
-
-        // Apply the shader
-        this.appliedShaders.push(shader);
-
-        // Import the shader to the DOM
-        this.importShader(shader);
-    }
-
-    public removeShader(shader:Shader) {
-        // Find the shader
-        const index = this.appliedShaders.indexOf(shader);
-
-        // Remove the shader
-        if (index > -1) this.appliedShaders.splice(index, 1);
-    }
-
     public render() {
         if (!this.flag_ready) return;
 
@@ -86,7 +63,7 @@ export class Renderer {
         const area:ShapeRect = this.renderingCamera.area();
 
         // Clear the viewport
-        this.viewport.clear();
+        this.gameViewport.clear();
 
         // Get the tile data
         const layers:any     = this.map.area(area)?.layers ?? null;
@@ -94,15 +71,6 @@ export class Renderer {
 
         // Each layer
         for (const layer of this.tileData) this.renderMapLayer(area, layer);
-
-        // Generate shader string
-        const shaders:string[] = [];
-        for (const shader of this.appliedShaders) shaders.push(`url(#${shader.name})`);
-        const shaderString = shaders.join(' ');
-
-        // apply the shader as css filter
-        // to the canvas
-        this.viewport.canvas.style.filter = shaderString;
     }
 
     private renderMapLayer(area: ShapeRect, layer: any) {
@@ -138,12 +106,12 @@ export class Renderer {
 
                 // Calculate the position considering the camera's center
                 const position: Position = {
-                    x: (x * tileSize.width - center.x) * this.renderingCamera.zoom + this.viewport.width / 2,
-                    y: (y * tileSize.height - center.y) * this.renderingCamera.zoom + this.viewport.height / 2
+                    x: (x * tileSize.width - center.x) * this.renderingCamera.zoom + this.gameViewport.width / 2,
+                    y: (y * tileSize.height - center.y) * this.renderingCamera.zoom + this.gameViewport.height / 2
                 };
 
                 // Draw the tile
-                this.viewport.context.drawImage(
+                this.gameViewport.context.drawImage(
                     image,
                     0, 0, tileSize.width, tileSize.height,
                     position.x, position.y, scaledTileSize.width, scaledTileSize.height
@@ -161,12 +129,8 @@ export class Renderer {
         this.flag_ready = true;
 
         // set the viewport render mode
-        this.viewport.context.imageSmoothingEnabled = this.imageSmoothing;
+        this.antiAliasing = false;
 
-    }
-
-    private importShader(shader:Shader) {
-        shader.importToDOM();
     }
 
 }

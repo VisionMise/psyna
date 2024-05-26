@@ -9,82 +9,29 @@
     <script defer src="js/psyna.js"></script>
 </head>
 <body>
-    
-    <!-- Shaders -->
-
-        <!-- Sharpen -->
-        <svg>
-            <filter id="sharpen">
-                <feConvolveMatrix
-                    order="3"
-                    kernelMatrix="
-                        0 -1 0
-                        -1 5 -1
-                        0 -1 0"
-                    edgeMode="duplicate" />
-            </filter>
-        </svg>
-        <!-- Sharpen -->
-
-
-        <!-- Fog -->
+    <shaders>
         <svg xmlns="http://www.w3.org/2000/svg">
-            <filter id="fog">
-                <!-- Generate noise -->
-                <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
-                
-                <!-- Apply a blur to the noise -->
-                <feGaussianBlur in="noise" stdDeviation="10" result="blurredNoise"/>
-                
-                <!-- Blend the noise with a semi-transparent white color -->
-                <feFlood flood-color="rgba(100, 100, 100, 0.05)" result="white"/>
-                <feBlend in="white" in2="blurredNoise" mode="lighten" />
+            <filter id="blur_filter">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
             </filter>
         </svg>
-
-        <!-- Fog -->
-
-
-        <!-- Glow -->
         <svg xmlns="http://www.w3.org/2000/svg">
-            <filter id="glow">
-                <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
-                <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                </feMerge>
+            <filter id="sharpen_filter">
+                <feConvolveMatrix in="SourceGraphic" order="3 3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" />
             </filter>
         </svg>
-        <!-- Glow -->
-
-        <!-- Matte -->
         <svg xmlns="http://www.w3.org/2000/svg">
-            <filter id="matte">
-                <feColorMatrix type="saturate" values="0.5" result="desaturated"/>
-                <feGaussianBlur in="desaturated" stdDeviation="2" result="blurred"/>
-                <feComposite in="blurred" in2="SourceGraphic" operator="over"/>
+            <filter id="pixelate_filter">
+                <feComponentTransfer>
+                    <feFuncR type="discrete" tableValues="0 1" />
+                    <feFuncG type="discrete" tableValues="0 1" />
+                    <feFuncB type="discrete" tableValues="0 1" />
+                </feComponentTransfer>
             </filter>
-        </svg>
-        <!-- Matte -->
-
-        <!-- Glossy -->
-        <svg xmlns="http://www.w3.org/2000/svg">
-            <filter id="glossy">
-                <!-- Apply a blur effect to create a smooth glossy appearance -->
-                <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blurred" />
-                
-                <!-- Apply specular lighting to create shiny highlights -->
-                <feSpecularLighting in="blurred" surfaceScale="5" specularConstant="1" specularExponent="20" lighting-color="white" result="specLighting">
-                    <fePointLight x="50" y="50" z="50" />
-                </feSpecularLighting>
-
-                <!-- Combine the original image with the lighting effect -->
-                <feComposite in="SourceGraphic" in2="specLighting" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />
-            </filter>
-        </svg>
-        <!-- Glossy -->
-
-    <!-- Shaders -->
-    <div id="viewport"></div>    
+        </svg>                
+    </shaders>
+    <game>
+        <div id="viewport"></div>
+    </game>
 </body>
 </html>
