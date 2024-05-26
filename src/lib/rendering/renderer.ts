@@ -3,20 +3,36 @@ import { Camera } from "../ui/camera.js";
 import { Viewport } from "../ui/viewport.js";
 import { Map, ShapeRect, TilesetTile } from "../world/map.js";
 
+export enum RendererShader {
+    None        = 'none',
+    Blur        = 'blur',
+    Sharpen     = 'sharpen',
+    EdgeDetect  = 'edge-detect',
+    Emboss      = 'emboss',
+    Glow        = 'glow',
+    Gloss       = 'gloss',
+    Matte       = 'matte'
+}
+
 export class Renderer {
 
-    private camera:Camera;
+    // Camera
+    private renderingCamera:Camera;
+
+    // Map
     private map:Map;
-    private viewport:Viewport;
-    private engine:Engine;
+
+    // Viewport
+    private viewport:Viewport;    
+
+    // Properties
     private flag_ready:boolean = false;
     private tileData: any;
+    private imageSmoothing:boolean = false;
+    private currentShader:RendererShader = RendererShader.None;
 
 
-    public constructor(engine:Engine, viewport:Viewport, map:Map, camera:Camera) {
-
-        // Set the engine
-        this.engine = engine;
+    public constructor(map:Map, viewport:Viewport, camera:Camera) {
 
         // Set the viewport
         this.viewport = viewport;
@@ -31,86 +47,122 @@ export class Renderer {
         this.setup();
     }
 
-    private async setup() : Promise<void> {
-
-        // Set the ready flag
-        this.flag_ready = true;
-
+    public get ready() : boolean {
+        return this.flag_ready;
     }
 
-    async render() {
+    public get antiAliasing() : boolean {
+        return this.imageSmoothing;
+    }
+
+    public set antiAliasing(value:boolean) {
+        this.imageSmoothing = value;
+        this.viewport.context.imageSmoothingEnabled = value;
+    }
+
+    public get camera() : Camera {
+        return this.renderingCamera;
+    }
+
+    public set camera(camera:Camera) {
+        this.renderingCamera = camera;
+    }
+
+    public get shader() : RendererShader {
+        return this.currentShader;
+    }
+
+    public set shader(shader:RendererShader) {
+        this.currentShader = shader;
+    }
+
+    public adjustHSL(hue:number, saturation:number, lightness:number) {
+        this.viewport.context.filter = `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${lightness}%)`;
+    }
+
+    public resetHSL() {
+        this.viewport.context.filter = 'none';
+    }
+
+    public render() {
         if (!this.flag_ready) return;
 
         // Get the area to render
         // in tiles
-        const area:ShapeRect = this.camera.area();
+        const area:ShapeRect = this.renderingCamera.area();
 
         // Clear the viewport
-        this.viewport.context.imageSmoothingEnabled = false;
         this.viewport.clear();
 
         // Get the tile data
         const layers:any     = this.map.area(area)?.layers ?? null;
         this.tileData        = layers;
 
+        // Each layer
+        for (const layer of this.tileData) this.renderMapLayer(area, layer);
+
+    }
+
+
+    private renderMapLayer(area: ShapeRect, layer: any) {
+
+        // Get the tile size
+        const tileSize:Size     = this.map.tileSize;
+
+        // Get the camera center
+        const center:Position   = this.renderingCamera.center();
+        
         // calculate the scaled tile size
         const scaledTileSize:Size = {
-            width: this.map.tileSize.width * this.camera.zoom,
-            height: this.map.tileSize.height * this.camera.zoom
+            width: this.map.tileSize.width * this.renderingCamera.zoom,
+            height: this.map.tileSize.height * this.renderingCamera.zoom
         };
 
-        const tileSize:Size = this.map.tileSize;
-        const center:Position = this.camera.center();
+        // Each Row
+        for (let y = area.y1; y <= area.y2; y++) {
 
-        // Each layer
-        for (const layer of layers) {
+            // Get the row
+            const row = layer[y] ?? null;
+            if (!row) continue;
 
-            // Each Row
-            for (let y = area.y1; y <= area.y2; y++) {
+            // Each Column
+            for (let x = area.x1; x <= area.x2; x++) {
 
-                const row = layer[y] ?? null;
-                if (!row) continue;
+                // Get the tile
+                const tile: TilesetTile = row[x] ?? null;
+                if (!tile) continue;
 
-                // Each Tile
-                for (let x = area.x1; x <= area.x2; x++) {
+                // Get the image
+                const image: ImageBitmap = tile.image;
 
-                    // Get the tile
-                    const tile:TilesetTile = row[x] ?? null;
-                    if (!tile) continue;
+                // Calculate the position considering the camera's center
+                const position: Position = {
+                    x: (x * tileSize.width - center.x) * this.renderingCamera.zoom + this.viewport.width / 2,
+                    y: (y * tileSize.height - center.y) * this.renderingCamera.zoom + this.viewport.height / 2
+                };
 
-                    // Get the image
-                    const image:ImageBitmap = tile.image;
-
-                    // Calculate the position
-                    // const position:Position = {
-                    //     x: (x - area.x1) * scaledTileSize.width,
-                    //     y: (y - area.y1) * scaledTileSize.height
-                    // };
-                    
-                    
-                    // Calculate the position considering the camera's center
-                    const position: Position = {
-                        x: (x * tileSize.width - center.x) * this.camera.zoom + this.viewport.width / 2,
-                        y: (y * tileSize.height - center.y) * this.camera.zoom + this.viewport.height / 2
-                    };
-
-
-
-                    // Draw the tile
-                    this.viewport.context.drawImage(
-                        image,
-                        0, 0, tileSize.width, tileSize.height,
-                        position.x, position.y, scaledTileSize.width, scaledTileSize.height
-                    );
-
-                }
+                // Draw the tile
+                this.viewport.context.drawImage(
+                    image,
+                    0, 0, tileSize.width, tileSize.height,
+                    position.x, position.y, scaledTileSize.width, scaledTileSize.height
+                );
 
             }
 
         }
-        
+
     }
 
+    
+    private async setup() : Promise<void> {
 
+        // Set the ready flag
+        this.flag_ready = true;
+
+        // set the viewport render mode
+        this.viewport.context.imageSmoothingEnabled = this.imageSmoothing;
+
+    }
 
 }

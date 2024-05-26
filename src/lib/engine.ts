@@ -119,16 +119,16 @@ import { World } from "./world/world.js";
             await this.world.loaded();
 
             // create a new camera
-            this.camera = new Camera(this.world.map, this, viewport);
+            this.camera = new Camera(this.world.map, viewport, this);
 
             // create a renderer
-            this.renderer = new Renderer(this, viewport, this.world.map, this.camera);
+            this.renderer = new Renderer(this.world.map, viewport, this.camera);
 
             // Create a clock event
             this.startClock();
         }
 
-        private async run() {
+        private run() {
 
             // calculate the delta time
             let now:number = Date.now();
@@ -148,7 +148,7 @@ import { World } from "./world/world.js";
                 this.frameCounter = 0;
             } else {
                 // request the next frame
-                requestAnimationFrame(async () => await this.run());
+                requestAnimationFrame(() => this.run());
                 return;
             }
 
@@ -157,7 +157,7 @@ import { World } from "./world/world.js";
             // delay or the frame rate will be affected
             // all graphics rendering should be done here
             // or be called from here
-            await this.renderer.render();
+            this.renderer.render();
 
             // raise the update event every frame
             // this is not for rendering graphics
@@ -188,7 +188,7 @@ import { World } from "./world/world.js";
             }
 
             // request the next frame
-            requestAnimationFrame(async () => await this.run());
+            requestAnimationFrame(() => this.run());
         }
 
         public console(message:string) {

@@ -19,11 +19,9 @@ export class Camera {
     // zoom properties
     private currentSpeed:number = 10;
     private currentZoom:number = 3;
-    private targetZoom:number = 3;
     private currentZoomSpeed:number = 1;
     private maxZoom:number = 6;
     private minZoom:number = 1;
-    private zoomProgress:number = 0;
 
     // movement properties
     private currentMovementType:MovementType = MovementType.Linear;
@@ -32,7 +30,7 @@ export class Camera {
     // map properties
     private worldMap:Map;
 
-    public constructor(worldMap:Map, engine:Engine, viewport:Viewport) {
+    public constructor(worldMap:Map, viewport:Viewport, engine:Engine) {
 
         // set the map
         // size in tiles
@@ -41,6 +39,14 @@ export class Camera {
         // set the viewport
         // size in pixels
         this.currentViewport = viewport;
+
+        // setup
+        this.setup(engine)
+
+    }
+
+
+    private setup(engine:Engine) {
     
         // set the camera position
         // in pixels
@@ -55,7 +61,7 @@ export class Camera {
         });
 
         //listen for mouse wheel events
-        viewport.canvas.addEventListener('wheel', (event:WheelEvent) => {
+        this.currentViewport.canvas.addEventListener('wheel', (event:WheelEvent) => {
             this.zoom += event.deltaY > 0 ? -this.currentZoomSpeed : this.currentZoomSpeed;
 
             // clamp the zoom
@@ -218,7 +224,7 @@ export class Camera {
 
     private update_smooth(deltaTime:number, speed:number) {
         // Constants
-        const lerpFactor = speed / 10;
+        const lerpFactor = speed / 10 * deltaTime / 1000;
 
         // Calculate the difference in position
         const dx = this.targetPosition.x - this.currentPosition.x;
@@ -304,19 +310,17 @@ export class Camera {
     }
 
 
+    private clampPosition(): void {
+        const halfViewportWidth = (this.viewport.width / 2) / this.currentZoom;
+        const halfViewportHeight = (this.viewport.height / 2) / this.currentZoom;
 
+        const mapWidthInPixels = this.map.size.width * this.map.tileSize.width;
+        const mapHeightInPixels = this.map.size.height * this.map.tileSize.height;
 
-private clampPosition(): void {
-    const halfViewportWidth = (this.viewport.width / 2) / this.currentZoom;
-    const halfViewportHeight = (this.viewport.height / 2) / this.currentZoom;
-
-    const mapWidthInPixels = this.map.size.width * this.map.tileSize.width;
-    const mapHeightInPixels = this.map.size.height * this.map.tileSize.height;
-
-    // Ensure the camera does not move out of the map boundaries
-    this.currentPosition.x = Math.max(halfViewportWidth, Math.min(mapWidthInPixels - halfViewportWidth, this.currentPosition.x));
-    this.currentPosition.y = Math.max(halfViewportHeight, Math.min(mapHeightInPixels - halfViewportHeight, this.currentPosition.y));
-}
+        // Ensure the camera does not move out of the map boundaries
+        this.currentPosition.x = Math.max(halfViewportWidth, Math.min(mapWidthInPixels - halfViewportWidth, this.currentPosition.x));
+        this.currentPosition.y = Math.max(halfViewportHeight, Math.min(mapHeightInPixels - halfViewportHeight, this.currentPosition.y));
+    }
 
 
 }

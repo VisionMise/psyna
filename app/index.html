@@ -9,6 +9,60 @@
     <script defer src="js/psyna.js"></script>
 </head>
 <body>
+
+    <!-- Shaders -->
+
+        <!-- Sharpen -->
+        <svg>
+            <filter id="sharpen">
+                <feColorMatrix type="matrix" values="0 -1 0 -1 5 -1 0 -1 0"></feColorMatrix>
+            </filter>
+        </svg>
+        <!-- Sharpen -->
+
+        <!-- Glow -->
+        <svg>
+            <filter id="glow">
+                <feGaussianBlur stdDeviation="5"></feGaussianBlur>
+                <feMerge>
+                    <feMergeNode></feMergeNode>
+                    <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+            </filter>
+        </svg>
+        <!-- Glow -->
+
+        <!-- Matte -->
+        <svg>
+            <filter id="matte">
+                <feComponentTransfer>
+                    <feFuncR type="table" tableValues="0 0.5"></feFuncR>
+                    <feFuncG type="table" tableValues="0 0.5"></feFuncG>
+                    <feFuncB type="table" tableValues="0 0.5"></feFuncB>
+                </feComponentTransfer>
+            </filter>
+        </svg>
+        <!-- Matte -->
+
+        <!-- Glossy -->
+        <svg>
+            <filter id="glossy">
+                <feGaussianBlur stdDeviation="5"></feGaussianBlur>
+                <feComponentTransfer>
+                    <feFuncR type="linear" slope="1.5"></feFuncR>
+                    <feFuncG type="linear" slope="1.5"></feFuncG>
+                    <feFuncB type="linear" slope="1.5"></feFuncB>
+                </feComponentTransfer>
+                <feMerge>
+                    <feMergeNode></feMergeNode>
+                    <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+            </filter>
+        </svg>
+        <!-- Glossy -->
+
+    <!-- Shaders -->
+
     <div id="viewport"></div>    
 </body>
 </html>
