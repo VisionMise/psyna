@@ -2,17 +2,7 @@ import { Engine, Position, Size } from "../engine.js";
 import { Camera } from "../ui/camera.js";
 import { Viewport } from "../ui/viewport.js";
 import { Map, ShapeRect, TilesetTile } from "../world/map.js";
-
-export enum RendererShader {
-    None        = 'none',
-    Blur        = 'blur',
-    Sharpen     = 'sharpen',
-    EdgeDetect  = 'edge-detect',
-    Emboss      = 'emboss',
-    Glow        = 'glow',
-    Gloss       = 'gloss',
-    Matte       = 'matte'
-}
+import { Shader } from "./shader.js";
 
 export class Renderer {
 
@@ -29,7 +19,7 @@ export class Renderer {
     private flag_ready:boolean = false;
     private tileData: any;
     private imageSmoothing:boolean = false;
-    private currentShader:RendererShader = RendererShader.None;
+    private appliedShaders:Shader[] = [];
 
 
     public constructor(map:Map, viewport:Viewport, camera:Camera) {
@@ -68,20 +58,24 @@ export class Renderer {
         this.renderingCamera = camera;
     }
 
-    public get shader() : RendererShader {
-        return this.currentShader;
+    public applyShader(shader:Shader) {
+
+        // Check if the shader is already applied
+        if (this.appliedShaders.includes(shader)) return;
+
+        // Apply the shader
+        this.appliedShaders.push(shader);
+
+        // Import the shader to the DOM
+        this.importShader(shader);
     }
 
-    public set shader(shader:RendererShader) {
-        this.currentShader = shader;
-    }
+    public removeShader(shader:Shader) {
+        // Find the shader
+        const index = this.appliedShaders.indexOf(shader);
 
-    public adjustHSL(hue:number, saturation:number, lightness:number) {
-        this.viewport.context.filter = `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${lightness}%)`;
-    }
-
-    public resetHSL() {
-        this.viewport.context.filter = 'none';
+        // Remove the shader
+        if (index > -1) this.appliedShaders.splice(index, 1);
     }
 
     public render() {
@@ -101,8 +95,15 @@ export class Renderer {
         // Each layer
         for (const layer of this.tileData) this.renderMapLayer(area, layer);
 
-    }
+        // Generate shader string
+        const shaders:string[] = [];
+        for (const shader of this.appliedShaders) shaders.push(`url(#${shader.name})`);
+        const shaderString = shaders.join(' ');
 
+        // apply the shader as css filter
+        // to the canvas
+        this.viewport.canvas.style.filter = shaderString;
+    }
 
     private renderMapLayer(area: ShapeRect, layer: any) {
 
@@ -154,7 +155,6 @@ export class Renderer {
 
     }
 
-    
     private async setup() : Promise<void> {
 
         // Set the ready flag
@@ -163,6 +163,10 @@ export class Renderer {
         // set the viewport render mode
         this.viewport.context.imageSmoothingEnabled = this.imageSmoothing;
 
+    }
+
+    private importShader(shader:Shader) {
+        shader.importToDOM();
     }
 
 }

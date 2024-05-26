@@ -131,9 +131,9 @@ import { World } from "./world/world.js";
         private run() {
 
             // calculate the delta time
-            let now:number = Date.now();
-            let deltaTime:number = (now - this.lastFrameTime) / 1000;
-            this.lastFrameTime = now;
+            let now:number          = Date.now();
+            let deltaTime:number    = (now - this.lastFrameTime) / 1000;
+            this.lastFrameTime      = now;
 
             // increment the frame counter
             this.frameCounter += deltaTime
