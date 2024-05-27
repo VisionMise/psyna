@@ -14,7 +14,8 @@ import { Viewport } from "../ui/viewport";
     export enum Shape {
         Rectangle,
         Circle,
-        Polygon
+        Polygon,
+        Rect
     }
 
     export enum LayerType {

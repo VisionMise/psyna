@@ -9,27 +9,6 @@
     <script defer src="js/psyna.js"></script>
 </head>
 <body>
-    <shaders>
-        <svg xmlns="http://www.w3.org/2000/svg">
-            <filter id="blur_filter">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
-            </filter>
-        </svg>
-        <svg xmlns="http://www.w3.org/2000/svg">
-            <filter id="sharpen_filter">
-                <feConvolveMatrix in="SourceGraphic" order="3 3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" />
-            </filter>
-        </svg>
-        <svg xmlns="http://www.w3.org/2000/svg">
-            <filter id="pixelate_filter">
-                <feComponentTransfer>
-                    <feFuncR type="discrete" tableValues="0 1" />
-                    <feFuncG type="discrete" tableValues="0 1" />
-                    <feFuncB type="discrete" tableValues="0 1" />
-                </feComponentTransfer>
-            </filter>
-        </svg>                
-    </shaders>
     <game>
         <div id="viewport"></div>
     </game>

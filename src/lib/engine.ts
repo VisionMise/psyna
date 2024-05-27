@@ -1,9 +1,9 @@
 //#region imports
 
     import { Renderer } from "./rendering/renderer.js";
-import { Camera } from "./ui/camera.js";
-import { Viewport } from "./ui/viewport.js";
-import { World } from "./world/world.js";
+    import { Camera } from "./ui/camera.js";
+    import { Viewport } from "./ui/viewport.js";
+    import { World } from "./world/world.js";
 
 //#endregion
 
@@ -18,6 +18,27 @@ import { World } from "./world/world.js";
 
 
 
+//#region enums
+
+    export enum ShapeType {
+        Rectangle = 'rectangle',
+        Circle = 'circle'
+    }
+
+    export enum Direction {
+        North       = 'north',
+        NorthEast   = 'north_east',
+        East        = 'east',
+        SouthEast   = 'south_east',
+        South       = 'south',
+        SouthWest   = 'south_west',
+        West        = 'west',
+        NorthWest   = 'north_west'
+    }
+
+//#endregion
+
+
 
 //#region interfaces
 
@@ -30,6 +51,39 @@ import { World } from "./world/world.js";
         width:number;
         height:number;
     }
+
+    export interface Property {
+        name:string;
+        value:any;
+    }
+
+    export interface GameItem {
+        name:string;
+        properties:Property[];
+    }
+
+
+
+    export interface Shape {
+        type:ShapeType;
+        width:number;
+        height:number;
+    }
+
+    export interface Hurtbox {
+        shape:Shape;
+        position:Position;
+        size:Size;
+        active:boolean;
+    }
+
+    export interface Hitbox {
+        shape:Shape;
+        position:Position;
+        size:Size;
+        active:boolean;
+    }
+
 
 
 //#endregion
