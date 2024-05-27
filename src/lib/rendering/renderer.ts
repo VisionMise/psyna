@@ -19,7 +19,7 @@ export class Renderer {
     private gameViewport:Viewport; 
 
     // UI Layers
-    private uiLayers:UILayer[];
+    private uiLayers:UILayer[] = [];
 
     // Properties
     private flag_ready:boolean = false;
@@ -65,10 +65,12 @@ export class Renderer {
         this.renderingCamera = camera;
     }
 
-    public createUILayer() {
-        const layer = new UILayer(this.engine, this.gameViewport.size);
+    public addUILayer(layer:UILayer) {
         this.uiLayers.push(layer);
-        return layer;
+    }
+
+    public removeUILayer(layer:UILayer) {
+        this.uiLayers = this.uiLayers.filter(l => l !== layer);
     }
 
     public render() {
@@ -81,6 +83,13 @@ export class Renderer {
         // Clear the viewport
         this.gameViewport.clear();
 
+        // if viewport image smoothing is different
+        // from the renderer's antiAliasing
+        // set the viewport image smoothing
+        if (this.gameViewport.context.imageSmoothingEnabled !== this.imageSmoothing) {
+            this.gameViewport.context.imageSmoothingEnabled = this.imageSmoothing;
+        }
+
         // Get the tile data
         const layers:any     = this.map.area(area)?.layers ?? null;
         this.tileData        = layers;
@@ -90,9 +99,8 @@ export class Renderer {
 
         // Render the UI Layers
         // only if there are Direct UI Layers
-        for (const layer of this.uiLayers) {
-            if (layer.type === UILayerRenderMethod.Direct) layer.render();
-        }
+        for (const layer of this.uiLayers) if (layer.type === UILayerRenderMethod.Direct) layer.render();
+    
     }
 
     private renderMapLayer(area: ShapeRect, layer: any) {

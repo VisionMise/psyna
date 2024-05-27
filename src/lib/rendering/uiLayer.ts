@@ -16,7 +16,7 @@ export class UILayer {
 
     protected eventTarget:EventTarget;
 
-    public constructor(engine:Engine, size:Size, renderMethod:UILayerRenderMethod = UILayerRenderMethod.Direct) {
+    public constructor(engine:Engine, size:Size, renderMethod:UILayerRenderMethod = UILayerRenderMethod.Frame) {
         this.engine         = engine;
         this.size           = size;
         this.renderMethod   = renderMethod;

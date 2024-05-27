@@ -6,6 +6,7 @@ export var Shape;
     Shape[Shape["Rectangle"] = 0] = "Rectangle";
     Shape[Shape["Circle"] = 1] = "Circle";
     Shape[Shape["Polygon"] = 2] = "Polygon";
+    Shape[Shape["Rect"] = 3] = "Rect";
 })(Shape || (Shape = {}));
 export var LayerType;
 (function (LayerType) {

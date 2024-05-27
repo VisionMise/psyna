@@ -1,7 +1,9 @@
 //#region imports
 
     import { Renderer } from "./rendering/renderer.js";
+import { UILayer } from "./rendering/uiLayer.js";
     import { Camera } from "./ui/camera.js";
+import { Menu } from "./ui/menu.js";
     import { Viewport } from "./ui/viewport.js";
     import { World } from "./world/world.js";
 
@@ -21,8 +23,9 @@
 //#region enums
 
     export enum ShapeType {
-        Rectangle = 'rectangle',
-        Circle = 'circle'
+        Rectangle   = 'rectangle',
+        Circle      = 'circle',
+        Polygon     = 'polygon'
     }
 
     export enum Direction {
@@ -62,25 +65,33 @@
         properties:Property[];
     }
 
-
-
     export interface Shape {
         type:ShapeType;
-        width:number;
-        height:number;
+        position:Position;
+    }
+
+    export interface Rectangle extends Shape {
+        type:ShapeType.Rectangle;
+        size:Size;
+    }
+
+    export interface Circle extends Shape {
+        type:ShapeType.Circle;
+        radius:number;
+    }
+
+    export interface Polygon extends Shape {
+        type:ShapeType.Polygon;
+        points:Position[];
     }
 
     export interface Hurtbox {
         shape:Shape;
-        position:Position;
-        size:Size;
         active:boolean;
     }
 
     export interface Hitbox {
         shape:Shape;
-        position:Position;
-        size:Size;
         active:boolean;
     }
 
@@ -177,6 +188,14 @@
 
             // create a renderer
             this.renderer = new Renderer(this, this.world.map, viewport, this.camera);
+
+            // Create the menu ui layer
+            const menuLayer:UILayer = new UILayer(this, viewport.size);
+            this.renderer.addUILayer(menuLayer);
+
+            // Create the menu and show it
+            const menu:Menu = new Menu(menuLayer);
+            await menu.show();
 
             // Create a clock event
             this.startClock();

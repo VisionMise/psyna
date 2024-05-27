@@ -18,7 +18,6 @@ export class Viewport {
         // Create the canvas
         this.viewportCanvas = document.createElement('canvas');
         this.viewportContext = this.viewportCanvas.getContext('2d', opt);
-        this.viewportContext.imageSmoothingEnabled = false;
         this.viewportContext.globalCompositeOperation = 'source-over';
 
         // get the viewport element
