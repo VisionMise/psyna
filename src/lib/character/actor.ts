@@ -7,6 +7,11 @@ export enum ActorState {
     Walking = 'walking'
 }
 
+export enum ActorType {
+    Player = 'player',
+    Enemy  = 'enemy'
+}
+
 export interface ActorStateAnimation {
     state:ActorState;
     animation:SpriteAnimation;
@@ -23,7 +28,7 @@ export abstract class Actor {
     protected actorHitbox:Hitbox;
 
     // Properties
-    protected typeName:string;
+    protected actorType:ActorType;
     protected currentState:ActorState;
     protected animations:ActorStateAnimation[];
     protected currentAnimation:SpriteAnimation;
@@ -32,10 +37,10 @@ export abstract class Actor {
     // World / Map
     protected world:World;
 
-    public constructor(typeName:string, world:World) {
+    public constructor(type:ActorType, world:World) {
 
         // Set the type name
-        this.typeName = typeName;
+        this.actorType = type;
 
         // Set the world
         this.world = world;
@@ -100,8 +105,8 @@ export abstract class Actor {
         return this.actorHurtbox;
     }
 
-    public get type() : string {
-        return this.typeName;
+    public get type() : ActorType {
+        return this.actorType;
     }
 
     public get state() : ActorState {

@@ -1,8 +1,8 @@
 import { World } from "../world/world.js";
-import { Actor } from "./actor.js";
+import { Actor, ActorType } from "./actor.js";
 
 export class Enemy extends Actor {
     constructor(world:World) {
-        super('enemy', world);
+        super(ActorType.Enemy, world);
     }
 }

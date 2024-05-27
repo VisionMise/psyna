@@ -1,7 +1,8 @@
+import { Actor } from "../character/actor.js";
 import { GameController, GameControllerType, Controls } from "./gameControls.js";
 
 export class Keyboard extends GameController {
-    constructor(manager:Controls) {
-        super(GameControllerType.Keyboard, manager);
+    constructor(actor:Actor, manager:Controls) {
+        super(actor, GameControllerType.Keyboard, manager);
     }
 }
