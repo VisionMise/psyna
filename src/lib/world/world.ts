@@ -76,7 +76,7 @@
         private async setup() : Promise<void> {
 
             // hook in to the clock update event
-            this.gameEngine.Events.addEventListener('clock_update', () => this.worldTicks++);
+            this.gameEngine.events.addEventListener('clock_update', () => this.worldTicks++);
 
             // Load the map
             await this.loadMap();

@@ -164,7 +164,7 @@ export abstract class Actor {
         ];
 
         // Event Target
-        const events:EventTarget = this.world.engine.Events;
+        const events:EventTarget = this.world.engine.events;
 
         // Hook the update event
         events.addEventListener('frame_update', (e:CustomEvent) => this.update(e.detail.delta));

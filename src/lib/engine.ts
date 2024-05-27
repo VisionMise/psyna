@@ -1,7 +1,7 @@
 //#region imports
 
     import { Renderer } from "./rendering/renderer.js";
-import { UILayer } from "./rendering/uiLayer.js";
+import { UILayer, UILayerType } from "./rendering/uiLayer.js";
     import { Camera } from "./ui/camera.js";
 import { Menu } from "./ui/menu.js";
     import { Viewport } from "./ui/viewport.js";
@@ -65,6 +65,17 @@ import { Menu } from "./ui/menu.js";
         properties:Property[];
     }
 
+    export interface GameItemSlot {
+        item:GameItem;
+        quantity:number;
+        index:number;
+    }
+
+    export interface GameItemInventory {
+        items:GameItemSlot[];
+        capacity:number;
+    }
+
     export interface Shape {
         type:ShapeType;
         position:Position;
@@ -119,9 +130,12 @@ import { Menu } from "./ui/menu.js";
 
         // Renderer
         private renderer:Renderer;
+
+        // Viewport
+        public readonly viewport:Viewport;
         
         // Event Handler
-        public readonly Events = new EventTarget();
+        public readonly events = new EventTarget();
 
         // Runtime
         private startTime:Date;
@@ -132,6 +146,9 @@ import { Menu } from "./ui/menu.js";
         public constructor() {
 
             this.console('Welcome to Psyna');
+
+            // create a new viewport
+            this.viewport = new Viewport();
 
             // Setup the world
             // then start the game
@@ -174,9 +191,6 @@ import { Menu } from "./ui/menu.js";
 
         private async setup() {
 
-            // create a new viewport
-            const viewport:Viewport = new Viewport();
-
             // Create the world
             this.world = new World(this);
 
@@ -184,13 +198,13 @@ import { Menu } from "./ui/menu.js";
             await this.world.loaded();
 
             // create a new camera
-            this.camera = new Camera(this.world.map, viewport, this);
+            this.camera = new Camera(this.world.map, this.viewport, this);
 
             // create a renderer
-            this.renderer = new Renderer(this, this.world.map, viewport, this.camera);
+            this.renderer = new Renderer(this, this.world.map, this.viewport, this.camera);
 
             // Create the menu ui layer
-            const menuLayer:UILayer = new UILayer(this, viewport.size);
+            const menuLayer:UILayer = new UILayer(UILayerType.Menu , this);
             this.renderer.addUILayer(menuLayer);
 
             // Create the menu and show it
@@ -236,7 +250,7 @@ import { Menu } from "./ui/menu.js";
             // this is not for rendering graphics
             // but for updating the game state only
             // such as camera position, player position, etc.
-            this.Events.dispatchEvent(new CustomEvent('frame_update', {detail:deltaTime}));
+            this.events.dispatchEvent(new CustomEvent('frame_update', {detail:deltaTime}));
 
             // update the world clock
             // every 1 second
@@ -249,7 +263,7 @@ import { Menu } from "./ui/menu.js";
                 if (this.worldClockTick >= 1) {
 
                     // raise the world clock event
-                    this.Events.dispatchEvent(new CustomEvent('clock_update', {detail:this.worldClockTick}));
+                    this.events.dispatchEvent(new CustomEvent('clock_update', {detail:this.worldClockTick}));
 
                     // reset the world clock tick
                     this.worldClockTick = 0;

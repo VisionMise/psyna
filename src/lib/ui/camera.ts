@@ -55,7 +55,7 @@ export class Camera {
 
         // listen for the update_frame event
         // and call the update method
-        engine.Events.addEventListener('frame_update', (event:CustomEvent) => {
+        engine.events.addEventListener('frame_update', (event:CustomEvent) => {
             const deltaTime = event?.detail ?? 0;
             this.update(deltaTime);
         });
