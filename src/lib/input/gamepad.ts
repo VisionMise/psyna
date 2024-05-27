@@ -1,7 +1,7 @@
-import { GameController, GameControllerType } from "./gameControls.js";
+import { GameController, GameControllerType, Controls } from "./gameControls.js";
 
 export class Gamepad extends GameController {
-    constructor() {
-        super(GameControllerType.Gamepad);
+    constructor(manager:Controls) {
+        super(GameControllerType.Gamepad, manager);
     }
 }
