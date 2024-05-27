@@ -176,7 +176,7 @@
             this.camera = new Camera(this.world.map, viewport, this);
 
             // create a renderer
-            this.renderer = new Renderer(this.world.map, viewport, this.camera);
+            this.renderer = new Renderer(this, this.world.map, viewport, this.camera);
 
             // Create a clock event
             this.startClock();

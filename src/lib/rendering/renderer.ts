@@ -1,9 +1,13 @@
-import { Position, Size } from "../engine.js";
+import { Engine, Position, Size } from "../engine.js";
 import { Camera } from "../ui/camera.js";
 import { Viewport } from "../ui/viewport.js";
 import { Map, ShapeRect, TilesetTile } from "../world/map.js";
+import { UILayer, UILayerRenderMethod } from "./uiLayer.js";
 
 export class Renderer {
+
+    // Engine
+    private engine:Engine;
 
     // Camera
     private renderingCamera:Camera;
@@ -14,12 +18,18 @@ export class Renderer {
     // Viewport
     private gameViewport:Viewport; 
 
+    // UI Layers
+    private uiLayers:UILayer[];
+
     // Properties
     private flag_ready:boolean = false;
     private tileData: any;
     private imageSmoothing:boolean = false;
 
-    public constructor(map:Map, viewport:Viewport, camera:Camera) {
+    public constructor(engine:Engine, map:Map, viewport:Viewport, camera:Camera) {
+
+        // Set the engine
+        this.engine = engine;
 
         // Set the viewport
         this.gameViewport = viewport;
@@ -55,6 +65,12 @@ export class Renderer {
         this.renderingCamera = camera;
     }
 
+    public createUILayer() {
+        const layer = new UILayer(this.engine, this.gameViewport.size);
+        this.uiLayers.push(layer);
+        return layer;
+    }
+
     public render() {
         if (!this.flag_ready) return;
 
@@ -71,6 +87,12 @@ export class Renderer {
 
         // Each layer
         for (const layer of this.tileData) this.renderMapLayer(area, layer);
+
+        // Render the UI Layers
+        // only if there are Direct UI Layers
+        for (const layer of this.uiLayers) {
+            if (layer.type === UILayerRenderMethod.Direct) layer.render();
+        }
     }
 
     private renderMapLayer(area: ShapeRect, layer: any) {
