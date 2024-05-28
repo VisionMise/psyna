@@ -189,7 +189,14 @@ import { Menu } from "./ui/menu.js";
             this.console('World clock stopped');
         }
 
-        private async setup() {
+        public console(message:string) {
+            const title = "color: #08f; font-weight: bold;"
+            const app   = "color: #0084ff; font-size: 7px;"
+            const style = "color: #9ab;"
+            console.log(`%cPsyna %cv${PSYNA_VERSION}\n%c${message}`, title, app, style);
+        }
+
+        private async setup() : Promise<void> {
 
             // Create the world
             this.world = new World(this);
@@ -203,16 +210,52 @@ import { Menu } from "./ui/menu.js";
             // create a renderer
             this.renderer = new Renderer(this, this.world.map, this.viewport, this.camera);
 
-            // Create the menu ui layer
-            const menuLayer:UILayer = new UILayer(UILayerType.Menu , this);
-            this.renderer.addUILayer(menuLayer);
+            // create the main menu
+            await this.showMainMainMenu();
+        }
 
-            // Create the menu and show it
-            const menu:Menu = new Menu(menuLayer);
-            await menu.show();
+        private async showMainMainMenu() : Promise<void> {
+            // Create the main menu
+            const menu:Menu = new Menu(this);
 
-            // Create a clock event
-            this.startClock();
+            // Add the menu to the UI layer
+            this.renderer.addUILayer(menu);
+
+            // Show the menu
+            // and wait for a selection
+            const response:string = await menu.show();
+
+            // Execute the selection
+            this.executeSelection(response);
+        }
+
+        private executeSelection(response:string) : void {
+            switch (response) {
+                case 'start':
+
+                    // Start the game
+                    this.console('Starting the game');
+
+                    // Create a clock event
+                    this.startClock();
+
+                    break;
+
+                case 'options':
+
+                    // Show the options menu
+                    this.console('Showing the options menu');
+
+                    break;
+
+                case 'exit':
+
+                    // Exit the game
+                    this.console('Exiting the game');
+
+                    break;
+
+            }
         }
 
         private run() {
@@ -276,13 +319,6 @@ import { Menu } from "./ui/menu.js";
 
             // request the next frame
             requestAnimationFrame(() => this.run());
-        }
-
-        public console(message:string) {
-            const title = "color: #08f; font-weight: bold;"
-            const app   = "color: #0084ff; font-size: 7px;"
-            const style = "color: #9ab;"
-            console.log(`%cPsyna %cv${PSYNA_VERSION}\n%c${message}`, title, app, style);
         }
 
     }

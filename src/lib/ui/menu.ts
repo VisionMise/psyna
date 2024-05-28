@@ -1,34 +1,41 @@
-import { UILayer } from "../rendering/uiLayer.js";
+import { Engine } from "../engine.js";
+import { UILayer, UILayerType } from "../rendering/uiLayer.js";
 
-export class Menu {
+export class Menu extends UILayer {
 
-    protected uiLayer:UILayer;
-
-    private waitingForSelection:boolean = true;
+    private waitingForSelection:boolean = false;
     private waiting:number;
+    private currentSelection:number = 0;
+    private currentSelectionValue:string = '';
 
-    constructor(uiLayer:UILayer) {
-        this.uiLayer = uiLayer;
-        this.uiLayer.events.addEventListener("up", () => {})
+    constructor(engine:Engine) {
+
+        super(UILayerType.Menu, engine, 100);
+
+        // setup the menu
+        this.setup();
+        
     }
 
-    public async show() : Promise<void> {
+    public async show() : Promise<string> {
+
+        // set the waiting flag
+        this.waitingForSelection = true;
+
+        // return a promise
         return new Promise(resolve => {
 
-            // wait for the user to make a selection
-            this.waiting = setInterval(() => {
-                if (!this.waitingForSelection) {
+            const menuSelectHandler = () : void => {
+                if (this.waitingForSelection == false) {
                     clearInterval(this.waiting);
-                    resolve();
+                    resolve(this.currentSelectionValue);
                 }
-            }, 500);
+            };
 
-            // render the menu
-            this.render();
+            // wait for the user to make a selection
+            this.waiting = setInterval(() => menuSelectHandler(), 500);
+                
         });
-    }
-
-    private render() {
     }
 
     private setup() {
@@ -41,12 +48,12 @@ export class Menu {
     private initEventHandlers() : void {
 
         // Initialize Event Listeners
-        this.uiLayer.engine.events.addEventListener('up', (event:CustomEvent) => this.handleEvent('up', event));
-        this.uiLayer.engine.events.addEventListener('down', (event:CustomEvent) => this.handleEvent('down', event));
-        this.uiLayer.engine.events.addEventListener('left', (event:CustomEvent) => this.handleEvent('left', event));
-        this.uiLayer.engine.events.addEventListener('right', (event:CustomEvent) => this.handleEvent('right', event));
-        this.uiLayer.engine.events.addEventListener('action1', (event:CustomEvent) => this.handleEvent('action1', event));
-        this.uiLayer.engine.events.addEventListener('action2', (event:CustomEvent) => this.handleEvent('action2', event));
+        this.engine.events.addEventListener('up', (event:CustomEvent) => this.handleEvent('up', event));
+        this.engine.events.addEventListener('down', (event:CustomEvent) => this.handleEvent('down', event));
+        this.engine.events.addEventListener('left', (event:CustomEvent) => this.handleEvent('left', event));
+        this.engine.events.addEventListener('right', (event:CustomEvent) => this.handleEvent('right', event));
+        this.engine.events.addEventListener('action1', (event:CustomEvent) => this.handleEvent('action1', event));
+        this.engine.events.addEventListener('action2', (event:CustomEvent) => this.handleEvent('action2', event));
     }
 
     private handleEvent(eventName:string, event:CustomEvent) : void {
@@ -54,20 +61,20 @@ export class Menu {
         switch (eventName) {
             case 'up':
             case 'left':
-                this.uiLayer.events.dispatchEvent(new CustomEvent('menu_previous'));
+                this.events.dispatchEvent(new CustomEvent('menu_previous'));
                 break;
 
             case 'down':
             case 'right':
-                this.uiLayer.events.dispatchEvent(new CustomEvent('menu_next'));
+                this.events.dispatchEvent(new CustomEvent('menu_next'));
                 break;
 
             case 'action1':
-                this.uiLayer.events.dispatchEvent(new CustomEvent('menu_select'));
+                this.events.dispatchEvent(new CustomEvent('menu_select'));
                 break;
 
             case 'action2':
-                this.uiLayer.events.dispatchEvent(new CustomEvent('menu_back'));
+                this.events.dispatchEvent(new CustomEvent('menu_back'));
                 break;
         }
 

@@ -2,7 +2,7 @@ import { Engine, Position, Size } from "../engine.js";
 import { Camera } from "../ui/camera.js";
 import { Viewport } from "../ui/viewport.js";
 import { Map, ShapeRect, TilesetTile } from "../world/map.js";
-import { UILayer, UILayerRenderMethod } from "./uiLayer.js";
+import { UILayer } from "./uiLayer.js";
 
 export class Renderer {
 
@@ -91,16 +91,12 @@ export class Renderer {
         }
 
         // Get the tile data
-        const layers:any     = this.map.area(area)?.layers ?? null;
-        this.tileData        = layers;
+        const tilemapLayers:any     = this.map.area(area)?.layers ?? null;
+        this.tileData               = tilemapLayers;
 
         // Each layer
-        for (const layer of this.tileData) this.renderMapLayer(area, layer);
+        for (const tilemapLayer of this.tileData) this.renderMapLayer(area, tilemapLayer);
 
-        // Render the UI Layers
-        // only if there are Direct UI Layers
-        for (const layer of this.uiLayers) if (layer.type === UILayerRenderMethod.Direct) layer.render();
-    
     }
 
     private renderMapLayer(area: ShapeRect, layer: any) {

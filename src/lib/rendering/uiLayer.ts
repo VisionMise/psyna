@@ -1,10 +1,4 @@
-import { Engine, Position, Size } from "../engine";
-
-export enum UILayerRenderMethod {
-    Direct = 0,
-    Frame = 1,
-    Clock = 2
-}
+import { Engine } from "../engine";
 
 export enum UILayerType {
     Menu            = 0,
@@ -13,60 +7,61 @@ export enum UILayerType {
     Notification    = 3
 }
 
-export class UILayer {
+export abstract class UILayer {
 
-    private element:HTMLElement;
-    private renderMethod:UILayerRenderMethod;
+    private layerElement:HTMLElement;
     private layerType:UILayerType;
+    private layerZIndex:number = 0;
 
     public readonly engine:Engine;
     public readonly events:EventTarget;
 
-    public constructor(type:UILayerType, engine:Engine, renderMethod:UILayerRenderMethod = UILayerRenderMethod.Frame) {
+    public constructor(type:UILayerType, engine:Engine, zIndex:number = 100) {
         this.engine         = engine;
-        this.renderMethod   = renderMethod;
         this.layerType      = type;
         this.events         = new EventTarget();
+        this.layerZIndex    = zIndex;
 
-        this.setup();
-
-        if (this.renderMethod === UILayerRenderMethod.Frame) {
-            this.engine.events.addEventListener('frame_update', () => this.render());
-        } else if (this.renderMethod === UILayerRenderMethod.Clock) {
-            this.engine.events.addEventListener('clock_update', () => this.render());
-        }
+        this.setupUILayer();
     }
 
-    public get type() : UILayerRenderMethod {
-        return this.renderMethod;
+    public get element() : HTMLElement {
+        return this.layerElement;
     }
 
-    public render() {
-        
+    public get zIndex() : number {
+        return this.layerZIndex;
     }
 
-    private setup() {
+    public set zIndex(value:number) {
+        this.layerZIndex = value;
+        this.layerElement.style.zIndex = value.toString();
+    }
+
+    private setupUILayer() {
 
         switch (this.layerType) {
 
             case UILayerType.Menu:
                 const div:HTMLDivElement = document.createElement('div') as HTMLDivElement;
-                div.style.width         = this.engine.viewport.width + 'px';
-                div.style.height        = this.engine.viewport.height + 'px';
-                div.style.position      = 'absolute';
-                div.style.top           = '0';
-                div.style.left          = '0';
-                this.element            = div as HTMLElement;
+                div.style.width         = `${this.engine.viewport.width}px`;
+                div.style.height        = `${this.engine.viewport.height}px`;
+                div.style.position      = 'fixed';
+                div.style.top           = '0px';
+                div.style.left          = '0px';
+                div.style.zIndex        = this.layerZIndex.toString();
+                this.layerElement       = div as HTMLElement;
                 break;
 
             case UILayerType.HUD:
                 const canvas:HTMLCanvasElement = document.createElement('canvas') as HTMLCanvasElement;
                 canvas.width            = this.engine.viewport.width;
                 canvas.height           = this.engine.viewport.height;
-                canvas.style.position   = 'absolute';
-                canvas.style.top        = '0';
-                canvas.style.left       = '0';
-                this.element            = canvas as HTMLElement;
+                canvas.style.position   = 'fixed';
+                canvas.style.top        = '0px';
+                canvas.style.left       = '0px';
+                canvas.style.zIndex     = this.layerZIndex.toString();
+                this.layerElement       = canvas as HTMLElement;
                 break;
 
             case UILayerType.Dialog:
