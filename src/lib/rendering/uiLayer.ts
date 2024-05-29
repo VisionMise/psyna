@@ -48,12 +48,13 @@ export abstract class UILayer {
                 const div:HTMLDivElement = document.createElement('div') as HTMLDivElement;
 
                 // Set the style
+                div.style.position      = 'fixed';
                 div.style.width         = `${this.engine.viewport.width}px`;
                 div.style.height        = `${this.engine.viewport.height}px`;
-                div.style.position      = 'fixed';
                 div.style.top           = '0px';
                 div.style.left          = '0px';
                 div.style.zIndex        = this.layerZIndex.toString();
+                div.style.display       = 'none';
 
                 // Add the classes
                 div.classList.add('ui-layer', 'ui-layer-menu');
@@ -64,12 +65,15 @@ export abstract class UILayer {
 
             case UILayerType.HUD:
                 const canvas:HTMLCanvasElement = document.createElement('canvas') as HTMLCanvasElement;
+
+                canvas.style.position   = 'fixed';
                 canvas.width            = this.engine.viewport.width;
                 canvas.height           = this.engine.viewport.height;
-                canvas.style.position   = 'fixed';
                 canvas.style.top        = '0px';
                 canvas.style.left       = '0px';
                 canvas.style.zIndex     = this.layerZIndex.toString();
+                canvas.style.display    = 'none';
+
                 this.layerElement       = canvas as HTMLElement;
                 break;
 
