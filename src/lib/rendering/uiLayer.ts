@@ -43,13 +43,22 @@ export abstract class UILayer {
         switch (this.layerType) {
 
             case UILayerType.Menu:
+                
+                // Create a new div element
                 const div:HTMLDivElement = document.createElement('div') as HTMLDivElement;
+
+                // Set the style
                 div.style.width         = `${this.engine.viewport.width}px`;
                 div.style.height        = `${this.engine.viewport.height}px`;
                 div.style.position      = 'fixed';
                 div.style.top           = '0px';
                 div.style.left          = '0px';
                 div.style.zIndex        = this.layerZIndex.toString();
+
+                // Add the classes
+                div.classList.add('ui-layer', 'ui-layer-menu');
+
+                // Add the element
                 this.layerElement       = div as HTMLElement;
                 break;
 

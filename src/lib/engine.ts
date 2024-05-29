@@ -3,7 +3,7 @@
     import { Renderer } from "./rendering/renderer.js";
 import { UILayer, UILayerType } from "./rendering/uiLayer.js";
     import { Camera } from "./ui/camera.js";
-import { Menu } from "./ui/menu.js";
+import { Menu, MenuItem } from "./ui/menu.js";
     import { Viewport } from "./ui/viewport.js";
     import { World } from "./world/world.js";
 
@@ -216,21 +216,21 @@ import { Menu } from "./ui/menu.js";
 
         private async showMainMainMenu() : Promise<void> {
             // Create the main menu
-            const menu:Menu = new Menu(this);
+            const menu:Menu = new Menu(this, 'game/ui/menus/main.html');
 
             // Add the menu to the UI layer
             this.renderer.addUILayer(menu);
 
             // Show the menu
             // and wait for a selection
-            const response:string = await menu.show();
+            const item:MenuItem = await menu.show();
 
             // Execute the selection
-            this.executeSelection(response);
+            this.executeSelection(item);
         }
 
-        private executeSelection(response:string) : void {
-            switch (response) {
+        private executeSelection(item:MenuItem) : void {
+            switch (item.command) {
                 case 'start':
 
                     // Start the game
