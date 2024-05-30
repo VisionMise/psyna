@@ -61,6 +61,7 @@ export abstract class UILayer {
 
                 // Add the element
                 this.layerElement       = div as HTMLElement;
+                document.body.appendChild(div);
                 break;
 
             case UILayerType.HUD:
