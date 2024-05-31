@@ -138,6 +138,7 @@ import { Menu, MenuItem } from "./ui/menu.js";
         public readonly events = new EventTarget();
 
         // Runtime
+        private engineStatus:string;
         private startTime:Date;
         private lastFrameTime:number = Date.now();
         private frameDelay:number = 0;
@@ -177,6 +178,15 @@ import { Menu, MenuItem } from "./ui/menu.js";
 
         public get clock() : number {
             return this.worldClockSeconds;
+        }
+
+        public set status(value:string) {
+            this.engineStatus = value;
+            this.events.dispatchEvent(new CustomEvent('engine_status', {detail:value}));
+        }
+
+        public get status() : string {
+            return this.engineStatus;
         }
 
         public startClock() {
@@ -222,7 +232,7 @@ import { Menu, MenuItem } from "./ui/menu.js";
 
         private async showLoadingScreen() : Promise<UILayer> {
             // Create the loading screen
-            const loadingScreen:Menu = new Menu(this, 'game/ui/loading/main.html');
+            const loadingScreen:Menu = new Menu(this, 'game/ui/loading/index.html');
 
             // Show the menu
             // and wait for a selection
@@ -239,7 +249,7 @@ import { Menu, MenuItem } from "./ui/menu.js";
         private async showMainMainMenu() : Promise<void> {
 
             // Create the main menu
-            const menu:Menu = new Menu(this, 'game/ui/title/main.html');
+            const menu:Menu = new Menu(this, 'game/ui/title/index.html');
 
             menu.waitForSelection = true;
 

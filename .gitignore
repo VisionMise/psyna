@@ -4,4 +4,4 @@ old
 *.tsj
 *.tiled-session
 *.tiled-project
-*.js
+app/js/*

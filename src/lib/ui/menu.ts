@@ -116,12 +116,41 @@ export class Menu extends UILayer {
         // fetch the menu html
         this.element.innerHTML = await this.fetchHTML(url);
 
+        // init the scripts
+        await this.initScripts();
+
         // init the menu items
         this.initMenuItems();
 
         // listen for game control events
         this.initEventHandlers();
         
+    }
+
+    private async initScripts() : Promise<void> {
+        return new Promise(resolve => {
+
+            // get the scripts
+            const scripts:NodeListOf<HTMLScriptElement> = this.element.querySelectorAll('script');
+
+            // loop through the scripts
+            scripts.forEach((script:HTMLScriptElement) => {
+
+                // create a new script element
+                const newScript:HTMLScriptElement = document.createElement('script');
+
+                // set the script src
+                newScript.src = script.src;
+
+                // set wait for load
+                newScript.addEventListener('load', () => resolve());
+
+                // append the script to the body
+                document.head.appendChild(newScript);
+
+            });
+
+        });
     }
 
     private initMenuItems() : void {

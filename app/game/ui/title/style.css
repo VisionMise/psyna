@@ -1,11 +1,5 @@
-/* import vcr_ocd_mono font */
-@font-face {
-    font-family: 'vcr_ocd_mono';
-    src: url('./vcr_ocd_mono_1.001.ttf') format('truetype');
-}
-
 .ui-layer-menu {
-    background-image:   url("./game/ui/title/background.png");
+    background-image:   url("main.png");
     background-size:    cover;
     background-repeat:  no-repeat;
 }
@@ -17,7 +11,7 @@
     justify-content:    center;
 
     box-shadow:         0em 0em 3em 2em inset #000000ab;    
-    backdrop-filter:    blur(0.2em) saturate(0.7);
+    backdrop-filter:    blur(0.032em) saturate(0.7);
 
     font-family:        'vcr_ocd_mono';
     letter-spacing:     0.01em;

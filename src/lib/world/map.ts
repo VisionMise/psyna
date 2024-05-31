@@ -126,7 +126,11 @@ import { Viewport } from "../ui/viewport";
                 // Set ready flag
                 this.flag_ready = true;
 
+                // set status
+                this.mapWorld.engine.status = `Stage ${this.mapName} loaded`;
             });
+
+            
         }
 
 
@@ -201,6 +205,9 @@ import { Viewport } from "../ui/viewport";
 
         private async loadConfiguration() {
 
+            // status
+            this.mapWorld.engine.status = `Loading world information`;
+
             // path of configuration file
             const path:string = `./game/stage/${this.mapName}/${this.mapName}.json`;
 
@@ -219,6 +226,9 @@ import { Viewport } from "../ui/viewport";
 
 
         private createMapConfiguration(jsonConfig:any) {
+
+            // status
+            this.mapWorld.engine.status = `Loading the map`;
 
             this.mapWorld.engine.console("Loading map configuration");
 
@@ -286,6 +296,10 @@ import { Viewport } from "../ui/viewport";
 
         private async preloadTileSpriteSheet() : Promise<void> {
 
+            
+            // status
+            this.mapWorld.engine.status = `Preloading game assets`;
+
             // get the tileset image
             const image = new Image();
             image.src   = `./game/stage/${this.mapName}/${this.mapName}.tileset.png`;
@@ -325,6 +339,9 @@ import { Viewport } from "../ui/viewport";
 
             this.mapWorld.engine.console(`Creating tileset for layer ${layer.name}`);
 
+            // status
+            this.mapWorld.engine.status = `Loading tiles for ${layer.name}`;
+
             // Get the tileset image
             const spritesheet: ImageData = this.mapSpritesheet;
             const tileSize = this.mapConfig.tilesize;
@@ -340,7 +357,11 @@ import { Viewport } from "../ui/viewport";
             for (let y = 0; y < layer.data.length; y++) {
                 for (let x = 0; x < layer.data[y].length; x++) {
 
+                    // Get the tile id
                     const tileId = layer.data[y][x];
+
+                    // Skip if the tile id is -1
+                    if (tileId === -1) continue;
 
                     // get the tile position
                     const tileX = (tileId % tilesX) * tileSize.width - tileSize.width;

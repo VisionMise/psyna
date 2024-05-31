@@ -28,6 +28,8 @@ export class Map {
         this.setup().then(() => {
             // Set ready flag
             this.flag_ready = true;
+            // set status
+            this.mapWorld.engine.status = `Stage ${this.mapName} loaded`;
         });
     }
     async tileToImage(tile) {
@@ -83,6 +85,8 @@ export class Map {
         });
     }
     async loadConfiguration() {
+        // status
+        this.mapWorld.engine.status = `Loading world information`;
         // path of configuration file
         const path = `./game/stage/${this.mapName}/${this.mapName}.json`;
         // load the configuration file
@@ -96,6 +100,8 @@ export class Map {
         return data;
     }
     createMapConfiguration(jsonConfig) {
+        // status
+        this.mapWorld.engine.status = `Loading the map`;
         this.mapWorld.engine.console("Loading map configuration");
         this.mapConfig = {
             dimensions: {
@@ -142,6 +148,8 @@ export class Map {
         return structuredData;
     }
     async preloadTileSpriteSheet() {
+        // status
+        this.mapWorld.engine.status = `Preloading game assets`;
         // get the tileset image
         const image = new Image();
         image.src = `./game/stage/${this.mapName}/${this.mapName}.tileset.png`;
@@ -170,6 +178,8 @@ export class Map {
     }
     async createTilesetForLayer(layer) {
         this.mapWorld.engine.console(`Creating tileset for layer ${layer.name}`);
+        // status
+        this.mapWorld.engine.status = `Loading tiles for ${layer.name}`;
         // Get the tileset image
         const spritesheet = this.mapSpritesheet;
         const tileSize = this.mapConfig.tilesize;
@@ -181,7 +191,11 @@ export class Map {
         // Loop through the layer data which contains indices to the tiles used in this layer
         for (let y = 0; y < layer.data.length; y++) {
             for (let x = 0; x < layer.data[y].length; x++) {
+                // Get the tile id
                 const tileId = layer.data[y][x];
+                // Skip if the tile id is -1
+                if (tileId === -1)
+                    continue;
                 // get the tile position
                 const tileX = (tileId % tilesX) * tileSize.width - tileSize.width;
                 const tileY = Math.floor(tileId / tilesX) * tileSize.height;
