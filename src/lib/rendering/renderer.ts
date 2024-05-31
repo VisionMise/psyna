@@ -71,6 +71,11 @@ export class Renderer {
 
     public removeUILayer(layer:UILayer) {
         this.uiLayers = this.uiLayers.filter(l => l !== layer);
+        layer.element.remove();
+    }
+
+    public getUILayerByIndex(index:number) : UILayer {
+        return this.uiLayers[index];
     }
 
     public render() {

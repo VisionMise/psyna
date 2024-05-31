@@ -49,8 +49,8 @@ export abstract class UILayer {
 
                 // Set the style
                 div.style.position      = 'fixed';
-                div.style.width         = `${this.engine.viewport.width}px`;
-                div.style.height        = `${this.engine.viewport.height}px`;
+                div.style.width         = '100%';
+                div.style.height        = '100%';
                 div.style.top           = '0px';
                 div.style.left          = '0px';
                 div.style.zIndex        = this.layerZIndex.toString();

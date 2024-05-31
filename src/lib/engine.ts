@@ -198,8 +198,14 @@ import { Menu, MenuItem } from "./ui/menu.js";
 
         private async setup() : Promise<void> {
 
+            // Show the loading screen
+            const loadingScreen:UILayer = await this.showLoadingScreen();
+
             // Create the world
             this.world = new World(this);
+
+            // create a renderer
+            this.renderer = new Renderer(this, this.world.map, this.viewport, this.camera);
 
             // Wait for the world to be ready
             await this.world.loaded();
@@ -207,16 +213,35 @@ import { Menu, MenuItem } from "./ui/menu.js";
             // create a new camera
             this.camera = new Camera(this.world.map, this.viewport, this);
 
-            // create a renderer
-            this.renderer = new Renderer(this, this.world.map, this.viewport, this.camera);
+            // Hide the loading screen
+            this.hideLoadingScreen(loadingScreen);
 
             // create the main menu
             await this.showMainMainMenu();
         }
 
+        private async showLoadingScreen() : Promise<UILayer> {
+            // Create the loading screen
+            const loadingScreen:Menu = new Menu(this, 'game/ui/loading/main.html');
+
+            // Show the menu
+            // and wait for a selection
+            await loadingScreen.show();
+
+            // return the loading screen
+            return loadingScreen;
+        }
+
+        private hideLoadingScreen(loadingScreen:UILayer) : void {
+            loadingScreen.element.remove();
+        }
+
         private async showMainMainMenu() : Promise<void> {
+
             // Create the main menu
-            const menu:Menu = new Menu(this, 'game/ui/menus/main.html');
+            const menu:Menu = new Menu(this, 'game/ui/title/main.html');
+
+            menu.waitForSelection = true;
 
             // Add the menu to the UI layer
             this.renderer.addUILayer(menu);

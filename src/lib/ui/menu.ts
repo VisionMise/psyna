@@ -25,12 +25,21 @@ export class Menu extends UILayer {
         
     }
 
+    public get waitForSelection() : boolean {
+        return this.waitingForSelection;
+    }
+
+    public set waitForSelection(value:boolean) {
+        this.waitingForSelection = value;
+    }
+
     public get currentItem() : MenuItem {
         // remove the selected class from all menu items
         this.menuItems.forEach((item:MenuItem) => item.element.classList.remove('selected'));
 
         // get the current item
         const item:MenuItem = this.menuItems[this.currentSelection];
+        if (!item) return null;
 
         // add the selected class to the current item
         item.element.classList.add('selected');
@@ -67,14 +76,18 @@ export class Menu extends UILayer {
     
     public async show() : Promise<MenuItem> {
 
-        // set the waiting flag
-        this.waitingForSelection = true;
-
         // set the current selection
         this.currentSelection = 0;
         
         // show the menu
         this.element.style.display = 'block';
+
+        // if we are not waiting for a selection, return the current item
+        if (this.waitingForSelection == false) {
+            return new Promise(resolve => {
+                setTimeout(() => resolve(this.currentItem), 1000);
+            });
+        }
 
         // return a promise
         return new Promise(resolve => {
@@ -134,6 +147,14 @@ export class Menu extends UILayer {
 
         });
 
+        // set the current selection
+        this.currentSelection = 0;
+
+        // set the waiting flag
+        this.waitingForSelection = true;
+
+        // add the selected class to the current item
+        this.currentItem;
     }
         
     private initEventHandlers() : void {
