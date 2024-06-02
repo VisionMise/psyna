@@ -1,11 +1,9 @@
-import { Actor, ActorType } from "../character/actor";
-
-export enum GameControllerType {
+export enum ControllerType {
     Keyboard,
     Gamepad
 }
 
-export enum ControlType {
+export enum ControllerAction {
     Up      = 'up',
     Down    = 'down',
     Left    = 'left',
@@ -18,38 +16,61 @@ export enum ControlType {
     Select  = 'select'
 }
 
-export class Controls {
-    
-    controllers:GameController[];
-
-    public Events:EventTarget;
-
-    constructor() {
-        this.controllers    = [];
-        this.Events         = new EventTarget();
-    }
-
+export interface ControllerEventDetail {
+    action: ControllerAction;
+    value: boolean;
 }
 
-export abstract class GameController {
+export abstract class Controller {
+    protected controllerType: ControllerType;
+    protected controllerActions: Map<ControllerAction, boolean> = new Map();
 
-    protected controllerType:GameControllerType;
-    protected manager:Controls;
-    protected actor:Actor;
-    
-    constructor(actor:Actor, type:GameControllerType, manager:Controls) {
-
-        // Set the properties
-        this.actor          = actor;
+    constructor(type: ControllerType) {
         this.controllerType = type;
-        this.manager        = manager; 
-
-        // Add the controller to the manager
-        // if the actor is a player
-        if (actor.type === ActorType.Player) this.manager.controllers.push(this);
     }
 
-    public get type() : GameControllerType {
+    public get type(): ControllerType {
         return this.controllerType;
+    }
+
+    public get actions(): Map<ControllerAction, boolean> {
+        return this.controllerActions;
+    }
+
+    public setAction(action: ControllerAction, value: boolean): void {
+        const currentValue = this.controllerActions.get(action) ?? false;
+        if (currentValue !== value) {
+            this.controllerActions.set(action, value);
+            this.dispatchEvent(action, value);
+        }
+    }
+
+    public getAction(action: ControllerAction): boolean {
+        return this.controllerActions.get(action) ?? false;
+    }
+
+    public clearActions(): void {
+        this.controllerActions.clear();
+    }
+
+    protected dispatchEvent(action: ControllerAction, value: boolean): void {
+        const event = new CustomEvent<ControllerEventDetail>('controllerAction', {
+            detail: { action, value }
+        });
+        window.dispatchEvent(event);
+    }
+
+    public abstract update(): void;
+}
+
+export class GameControllerManager {
+    private controllers: Controller[] = [];
+
+    public addController(controller: Controller): void {
+        this.controllers.push(controller);
+    }
+
+    public update(): void {
+        this.controllers.forEach(controller => controller.update());
     }
 }

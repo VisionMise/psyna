@@ -1,9 +1,9 @@
 //#region imports
 
     import { Renderer } from "./rendering/renderer.js";
-import { UILayer, UILayerType } from "./rendering/uiLayer.js";
+    import { UILayer, UILayerType } from "./rendering/uiLayer.js";
     import { Camera } from "./ui/camera.js";
-import { Menu, MenuItem } from "./ui/menu.js";
+    import { Menu, MenuItem } from "./ui/menu.js";
     import { Viewport } from "./ui/viewport.js";
     import { World } from "./world/world.js";
 
@@ -14,7 +14,7 @@ import { Menu, MenuItem } from "./ui/menu.js";
 //#region constants
 
     // Psyna Engine version
-    const PSYNA_VERSION = '0.0.2';
+    const PSYNA_VERSION = '0.0.3';
 
 //#endregion
 
@@ -144,6 +144,7 @@ import { Menu, MenuItem } from "./ui/menu.js";
         private frameDelay:number = 0;
         private frameCounter:number = 0;
         private runtimeReady:boolean = false;
+        private runtimeRate:number = 0;
 
         public constructor() {
 
@@ -308,10 +309,11 @@ import { Menu, MenuItem } from "./ui/menu.js";
             this.lastFrameTime      = now;
 
             // increment the frame counter
-            this.frameCounter += deltaTime
+            this.frameCounter  += deltaTime            
 
             // update delta time with the world clock speed
-            deltaTime *= this.worldClockSpeed;
+            deltaTime          *= this.worldClockSpeed;
+            this.runtimeRate    = deltaTime;
 
 
             // if the frame delay is less than 
