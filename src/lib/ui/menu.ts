@@ -82,6 +82,7 @@ export class Menu extends UILayer {
         // show the menu
         this.element.style.display = 'block';
 
+
         // if we are not waiting for a selection, return the current item
         if (this.waitingForSelection == false) {
             return new Promise(resolve => {
@@ -156,7 +157,7 @@ export class Menu extends UILayer {
     private initMenuItems() : void {
 
         // get the menu items
-        const items:NodeListOf<HTMLElement> = this.element.querySelectorAll('.menu-item');
+        const items:NodeListOf<HTMLElement> = this.element.querySelectorAll('.menu-item');        
         if (!items || items.length <= 0) return;
 
         // loop through the menu items
