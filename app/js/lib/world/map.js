@@ -78,11 +78,16 @@ export class Map {
         // preload tileset
         await this.preloadTileSpriteSheet();
         // create tileset for each layer
-        this.mapConfig.layers.forEach(async (layer) => {
+        // this.mapConfig.layers.forEach(async layer => {
+        //     if (layer.type === LayerType.TileLayer) {
+        //         this.layerTilesets[layer.id] = await this.createTilesetForLayer(layer);
+        //     }
+        // });
+        for (let layer of this.mapConfig.layers) {
             if (layer.type === LayerType.TileLayer) {
                 this.layerTilesets[layer.id] = await this.createTilesetForLayer(layer);
             }
-        });
+        }
     }
     async loadConfiguration() {
         // status
@@ -188,8 +193,13 @@ export class Map {
         const tilesY = spritesheet.height / tileSize.height;
         // Create tileset array
         const tileset = [];
+        // progress
+        let progress = 0;
+        let total = layer.data.length * layer.data[0].length;
         // Loop through the layer data which contains indices to the tiles used in this layer
         for (let y = 0; y < layer.data.length; y++) {
+            // allow request animation frame to update
+            await new Promise(resolve => setTimeout(resolve, 0));
             for (let x = 0; x < layer.data[y].length; x++) {
                 // Get the tile id
                 const tileId = layer.data[y][x];
@@ -202,6 +212,11 @@ export class Map {
                 // Get the tile image data
                 const position = { x: tileX, y: tileY };
                 const tileImageData = this.getTileImageData(position, tileSize, spritesheet);
+                // progress
+                progress++;
+                let percent = Math.floor((progress / total) * 100);
+                this.mapWorld.engine.status = `Loading ${layer.name} ${percent}%`;
+                // Add the tile to the tileset
                 tileset[tileId] = {
                     id: tileId,
                     position: position,

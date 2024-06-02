@@ -143,6 +143,7 @@ import { Menu, MenuItem } from "./ui/menu.js";
         private lastFrameTime:number = Date.now();
         private frameDelay:number = 0;
         private frameCounter:number = 0;
+        private runtimeReady:boolean = false;
 
         public constructor() {
 
@@ -176,13 +177,16 @@ import { Menu, MenuItem } from "./ui/menu.js";
             return (Date.now() - this.startTime.getTime()) / 1000;
         }
 
+        public get runtimeIsReady() : boolean {
+            return this.runtimeReady;
+        }
+
         public get clock() : number {
             return this.worldClockSeconds;
         }
 
         public set status(value:string) {
-            this.engineStatus = value;
-            this.events.dispatchEvent(new CustomEvent('engine_status', {detail:value}));
+            this.engineStatus = value;            
         }
 
         public get status() : string {
@@ -244,6 +248,9 @@ import { Menu, MenuItem } from "./ui/menu.js";
 
         private hideLoadingScreen(loadingScreen:UILayer) : void {
             loadingScreen.element.remove();
+            
+            // dispatch the engine ready event
+            this.events.dispatchEvent(new CustomEvent('engine_ready'));
         }
 
         private async showMainMainMenu() : Promise<void> {

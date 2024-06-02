@@ -1,5 +1,5 @@
 .ui-layer-menu {
-    background-image:   url("main.png");
+    background-image:   url("background.png");
     background-size:    cover;
     background-repeat:  no-repeat;
     user-select:        none;
@@ -12,7 +12,7 @@
     justify-content:    center;
 
     box-shadow:         0em 0em 3em 2em inset #000000ab;    
-    backdrop-filter:    blur(0.07em) saturate(0.5);
+    backdrop-filter:    blur(0.05em) saturate(0.2);
 
     font-family:        'vcr_ocd_mono';
     letter-spacing:     0.01em;
@@ -34,13 +34,13 @@
 
 .menu-container .title-container {
     text-shadow:        #083c13 -0.01em 0.01em 0.04em;
-    color:              #a6cfb6f0;
+    color:              #c5cec6f0;
 }
 
 .menu-container .title {
     font-size:          2em;
     text-transform:     capitalize;
-    border-bottom:      solid 4px #d7ffd5eb;
+    border-bottom:      solid 4px #c5cec6f0;
 }
 
 .menu-item {

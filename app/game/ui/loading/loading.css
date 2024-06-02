@@ -1,0 +1,10 @@
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+
+    font-family: 'vcr_ocd_mono';
+    font-size: 2.5em;
+}

@@ -115,10 +115,16 @@ export class Menu extends UILayer {
     private async setup(url:string) {
 
         // fetch the menu html
-        this.element.innerHTML = await this.fetchHTML(url);
+        let html:string = await this.fetchHTML(url);      
+
+        // init the links
+        html = (await this.initLinks(html)).innerHTML;
 
         // init the scripts
-        await this.initScripts();
+        html = (await this.initScripts(html)).innerHTML;
+
+        // set the inner html
+        this.element.innerHTML = html;
 
         // init the menu items
         this.initMenuItems();
@@ -128,12 +134,24 @@ export class Menu extends UILayer {
         
     }
 
-    private async initScripts() : Promise<void> {
+    private async initScripts(html:string) : Promise<HTMLElement> {
+
+        // create a new div element
+        const div:HTMLDivElement = document.createElement('div');
+        div.innerHTML = html;
+
+        // get the scripts
+        const scripts:NodeListOf<HTMLScriptElement> = div.querySelectorAll('script');
+
+        // return a promise
         return new Promise(resolve => {
 
-            // get the scripts
-            const scripts:NodeListOf<HTMLScriptElement> = this.element.querySelectorAll('script');
+            // if there are no scripts, resolve
+            if (!scripts || scripts.length <= 0) resolve(div);
 
+            // script promises
+            const promises:Promise<void>[] = [];
+            
             // loop through the scripts
             scripts.forEach((script:HTMLScriptElement) => {
 
@@ -143,14 +161,74 @@ export class Menu extends UILayer {
                 // set the script src
                 newScript.src = script.src;
 
+                // remove the script from the original element
+                script.remove();
+
                 // set wait for load
-                newScript.addEventListener('load', () => resolve());
+                const promise:Promise<void> = new Promise(resolve => newScript.addEventListener('load', () => resolve()));
+
+                // add the promise to the promises array
+                promises.push(promise);
 
                 // append the script to the body
                 document.head.appendChild(newScript);
+            });
+
+
+            // wait for all promises to resolve
+            Promise.all(promises).then(() => resolve(div));
+        });
+    }
+
+    private async initLinks(html:string) : Promise<HTMLElement> {
+
+        // create a new div element
+        const div:HTMLDivElement = document.createElement('div');
+        div.innerHTML = html;
+
+        // get the links
+        const links:NodeListOf<HTMLLinkElement> = div.querySelectorAll('link');
+
+        // return a promise
+        return new Promise(resolve => {
+
+            // if there are no links, resolve
+            if (!links || links.length <= 0) resolve(div);
+
+            // promise array
+            const promises:Promise<void>[] = [];
+
+            // loop through the links
+            links.forEach((link:HTMLLinkElement) => {
+
+                // create a new link element
+                const newLink:HTMLLinkElement = document.createElement('link');
+
+                // set the link rel
+                newLink.rel = link.rel;
+
+                // set the link href
+                newLink.href = link.href;
+
+                // set the link type
+                newLink.type = link.type;
+
+                // remove the link from the original element
+                link.remove();
+
+                // set wait for load
+                const promise:Promise<void> = new Promise(resolve => newLink.addEventListener('load', () => resolve()));
+
+                // add the promise to the promises array
+                promises.push(promise);
+
+                // append the link to the head
+                document.head.appendChild(newLink);
 
             });
 
+            // wait for all promises to resolve
+            Promise.all(promises).then(() => resolve(div));
         });
     }
 
