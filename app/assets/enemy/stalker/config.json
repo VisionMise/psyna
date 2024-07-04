@@ -1,9 +1,0 @@
-{
-    "name": "Stalker",
-    "size": {
-        "width": 64,
-        "height": 64
-    },
-    "color": "#fe8c56aa",
-    "movement": "stalk"
-}

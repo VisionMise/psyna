@@ -1,1 +1,7 @@
 .vscode
+old
+*.tsx
+*.tsj
+*.tiled-session
+*.tiled-project
+app/js/*
