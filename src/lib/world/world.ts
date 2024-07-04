@@ -1,7 +1,6 @@
 //#region Imports
 
     import { Engine } from "../engine.js";
-    import { Viewport } from "../ui/viewport.js";
     import { Map } from "./map.js";
 
 //#endregion

@@ -1,9 +1,8 @@
 //#region Imports
 
-    import { Position, Size } from "../engine";
-import { Camera } from "../ui/camera";
-import { Viewport } from "../ui/viewport";
-    import { World } from "./world";
+    import { Position, Size }   from "../engine";
+    import { Camera }           from "../ui/camera";    
+    import { World }            from "./world";
 
 //#endregion
 
@@ -379,7 +378,7 @@ import { Viewport } from "../ui/viewport";
 
                     // get the tile position
                     const tileX = (tileId % tilesX) * tileSize.width - tileSize.width;
-                    const tileY = Math.floor(tileId / tilesX) * tileSize.height;
+                    const tileY = Math.floor(tileId / tilesY) * tileSize.height;
 
                     // Get the tile image data
                     const position: Position = { x: tileX, y: tileY };
